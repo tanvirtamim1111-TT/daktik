@@ -1,0 +1,349 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+Bengali:wght@400;500;600;700&family=Noto+Serif:ital,wght@0,400;0,700;1,400&family=Hind+Siliguri:wght@300;400;500;600;700&family=Atma:wght@300;400;500;600;700&family=Work+Sans:wght@400;500;700&family=Dancing+Script:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@font-face {
+  font-family: 'Fancy Handwriting';
+  src: url('/Fancy Handwriting.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Imam Poushali Unicode';
+  src: url('/Imam Poushali Unicode.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Imam Poushali Unicode Italic';
+  src: url('/Imam Poushali Unicode Italic.ttf') format('truetype');
+  font-weight: normal;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: 'FN Hasan Priyotoma Unicode';
+  src: url('/FN Hasan Priyotoma Unicode.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'FN Hasan Priyotoma Unicode Italic';
+  src: url('/FN Hasan Priyotoma Unicode Italic.ttf') format('truetype');
+  font-weight: normal;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: 'FN Himu Regular';
+  src: url('/FN Himu Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'FN Himu Italic';
+  src: url('/FN Himu Italic.ttf') format('truetype');
+  font-weight: normal;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: 'Imam Poushali Bijoy 2003';
+  src: url('/Imam Poushali Bijoy 2003.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Imam Poushali Bijoy 2003 Italic';
+  src: url('/Imam Poushali Bijoy 2003 Italic.ttf') format('truetype');
+  font-weight: normal;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: 'Imam Poushali Bijoy52';
+  src: url('/Imam Poushali Bijoy52.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Imam Poushali Bijoy52 Italic';
+  src: url('/Imam Poushali Bijoy52 Italic.ttf') format('truetype');
+  font-weight: normal;
+  font-style: italic;
+}
+
+:root {
+  --theme-primary: #af2323; /* Classic Postal Red */
+  --theme-primary-container: #8d1c1c;
+  --theme-secondary: #2d5a27; /* Deep Ivy Green */
+  --theme-secondary-container: #1b4332;
+  --theme-tertiary: #b8860b; /* Dark Goldenrod */
+  --theme-background: #fdfaf3; /* Authentic Aged Paper */
+  --theme-surface: #fdfaf3;
+  --theme-surface-container: #f2ede1; 
+  --theme-surface-container-low: #f8f5eb;
+  --theme-surface-container-high: #eae4d3;
+  --theme-surface-container-highest: #e2dac4;
+  --theme-on-surface: #3c362a;
+  --color-accent: #11366b; /* Postal Blue */
+}
+
+@theme {
+  --color-primary: var(--theme-primary);
+  --color-primary-container: var(--theme-primary-container);
+  --color-on-primary: #ffffff;
+  --color-secondary: var(--theme-secondary);
+  --color-secondary-container: var(--theme-secondary-container);
+  --color-on-secondary: #ffffff;
+  --color-tertiary: var(--theme-tertiary);
+  --color-tertiary-container: #8f6d63;
+  --color-on-tertiary: #ffffff;
+  --color-background: var(--theme-background);
+  --color-surface: var(--theme-surface);
+  --color-on-surface: var(--theme-on-surface);
+  --color-surface-container: var(--theme-surface-container);
+  --color-surface-container-low: var(--theme-surface-container-low);
+  --color-surface-container-high: var(--theme-surface-container-high);
+  --color-surface-container-highest: var(--theme-surface-container-highest);
+  --color-on-surface-variant: #5d544b;
+  --color-outline: #a89f91;
+  --color-outline-variant: #dccfb8;
+  --color-accent: var(--color-accent);
+  --color-paper: #f5f5dc;
+  
+  --font-sans: "Hind Siliguri", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Noto Serif Bengali", "Noto Serif", serif;
+  --font-handwriting: "Atma", cursive;
+  --font-label: "Work Sans", sans-serif;
+  --font-headline: "Noto Serif Bengali", serif;
+  --font-body: "Noto Serif Bengali", serif;
+  --font-bengali-num: "Hind Siliguri", "Inter", sans-serif;
+}
+
+@layer base {
+  body {
+    @apply bg-background text-on-surface font-sans;
+    -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+    -khtml-user-select: none; /* Konqueror HTML */
+    -moz-user-select: none; /* Old versions of Firefox */
+    -ms-user-select: none; /* Internet Explorer/Edge */
+    user-select: none; /* Non-prefixed version, currently supported by Chrome, Edge, Opera and Firefox */
+    touch-action: manipulation; /* Disable double-tap to zoom */
+  }
+
+  /* Allow text selection in input fields and textareas */
+  input, textarea {
+    -webkit-user-select: auto;
+    user-select: auto;
+  }
+}
+
+.wood-texture {
+    background-color: #4e342e;
+    background-image: 
+      linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)), 
+      url("https://www.transparenttextures.com/patterns/dark-wood.png");
+    background-blend-mode: overlay;
+}
+
+.paper-shadow {
+    box-shadow: 0 8px 24px rgba(30, 28, 17, 0.08)
+}
+
+.paper-texture {
+  background-image: url("https://www.transparenttextures.com/patterns/paper-fibers.png");
+  position: relative;
+}
+
+.paper-texture::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.02) 100%);
+  pointer-events: none;
+}
+
+.retro-bevel {
+  box-shadow: 
+    inset 2px 2px 0 rgba(255,255,255,0.8),
+    inset -2px -2px 0 rgba(0,0,0,0.1),
+    2px 2px 5px rgba(0,0,0,0.05);
+}
+
+.retro-bevel-dark {
+  box-shadow: 
+    inset 2px 2px 0 rgba(0,0,0,0.1),
+    inset -2px -2px 0 rgba(255,255,255,0.2);
+}
+
+.postal-stripes {
+  background: repeating-linear-gradient(
+    45deg,
+    #af2323,
+    #af2323 10px,
+    #ffffff 10px,
+    #ffffff 20px,
+    #11366b 20px,
+    #11366b 30px,
+    #ffffff 30px,
+    #ffffff 40px
+  );
+}
+
+.vintage-border {
+  border: 4px double var(--theme-primary);
+  @apply rounded-sm;
+}
+
+.wax-seal {
+  width: 40px;
+  height: 40px;
+  background: #a31a1a;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 
+    inset 0 0 10px rgba(0,0,0,0.5),
+    2px 2px 5px rgba(0,0,0,0.3);
+  position: relative;
+  transform: rotate(-5deg);
+}
+
+.wax-seal::before {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  border: 2px solid rgba(255,255,255,0.1);
+  border-radius: 50%;
+}
+
+.gold-border {
+  border: 2px solid #d4af37;
+  @apply rounded-3xl;
+}
+
+.wax-seal {
+  @apply w-16 h-16 rounded-full bg-red-700 shadow-lg flex items-center justify-center border-4 border-red-800;
+  background-image: radial-gradient(circle at 30% 30%, #b91c1c, #7f1d1d);
+}
+
+.postbox-shadow {
+  box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.3);
+}
+
+.inner-shadow {
+  box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
+}
+
+.utility-text {
+  font-family: var(--font-label);
+}
+
+.bn-number {
+  font-family: var(--font-bengali-num);
+  font-weight: 700;
+  letter-spacing: 0.025em;
+}
+
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+@keyframes ember-glow {
+  0% { filter: brightness(1) drop-shadow(0 0 2px #ff4500); }
+  50% { filter: brightness(1.5) drop-shadow(0 0 5px #ff8c00); }
+  100% { filter: brightness(1) drop-shadow(0 0 2px #ff4500); }
+}
+
+.animate-ember {
+  animation: ember-glow 2s infinite ease-in-out;
+}
+
+.ash-texture {
+  background-color: #222;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  mix-blend-mode: multiply;
+  opacity: 0.8;
+}
+
+.charred-edge {
+  box-shadow: inset 0 0 20px 10px rgba(0,0,0,0.8), inset 0 0 10px 2px rgba(139,69,19,0.5);
+}
+
+/* Realistic Burning Effect Filter */
+.burn-filter {
+  filter: url(#ash-distortion);
+}
+
+@keyframes burning-progress {
+  0% { mask-position: 100% 0%; }
+  100% { mask-position: 0% 0%; }
+}
+
+.fire-edge-glow {
+  background: linear-gradient(to bottom, 
+    transparent 0%, 
+    rgba(255, 69, 0, 0.9) 15%, 
+    rgba(255, 140, 0, 1) 50%, 
+    rgba(255, 255, 0, 1) 55%, 
+    rgba(255, 140, 0, 1) 60%, 
+    rgba(255, 69, 0, 0.9) 85%, 
+    transparent 100%
+  );
+  width: 15px;
+  filter: blur(4px) brightness(2.5);
+  box-shadow: 0 0 20px #ff4500, 0 0 40px #ff8c00, 0 0 60px #ffff00;
+  animation: fire-flicker 0.1s infinite alternate;
+}
+
+.burning-mask {
+  mask-image: linear-gradient(to right, transparent 45%, black 55%);
+  mask-size: 300% 100%;
+  animation: burning-progress 2.5s forwards linear;
+}
+
+@keyframes fire-flicker {
+  0% { transform: scaleX(0.8) skewY(1deg); opacity: 0.8; }
+  100% { transform: scaleX(1.2) skewY(-1deg); opacity: 1; }
+}
+
+@keyframes float-ember {
+  0% { transform: translateY(0) rotate(0deg) scale(1); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translateY(-150px) rotate(360deg) scale(0.5); opacity: 0; }
+}
+
+.ember-particle {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  background: #ff4500;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #ff8c00, 0 0 15px #ffff00;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.ash-particle {
+  position: absolute;
+  background: #222;
+  width: 6px;
+  height: 6px;
+  clip-path: polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%);
+  filter: blur(1px);
+  pointer-events: none;
+  animation: ash-drift 3s infinite ease-out;
+}
+
+@keyframes ash-drift {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+  100% { transform: translate(-20px, 100px) rotate(90deg); opacity: 0; }
+}

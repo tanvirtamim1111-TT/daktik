@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "404291330543",
+    "project_id": "gen-lang-client-0688246202",
+    "storage_bucket": "gen-lang-client-0688246202.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:404291330543:android:38f11c47a261bac979d61a",
+        "android_client_info": {
+          "package_name": "com.dakghor.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "404291330543-r4v2merjhevmhmm3442r69hedj3v9k73.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCOsmnOk41oBCkgSGwAA5h9WA4lWSxWNCk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "404291330543-r4v2merjhevmhmm3442r69hedj3v9k73.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

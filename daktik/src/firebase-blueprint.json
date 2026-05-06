@@ -1,0 +1,216 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "birthday": { "type": "string" },
+        "gender": { "type": "string", "enum": ["male", "female", "other"] },
+        "bio": { "type": "string" },
+        "interests": { "type": "string" },
+        "village": { "type": "string" },
+        "postOffice": { "type": "string" },
+        "thana": { "type": "string" },
+        "district": { "type": "string" },
+        "postcode": { "type": "string" },
+        "coins": { "type": "number" },
+        "role": { "type": "string", "enum": ["user", "admin", "moderator"] },
+        "referralCode": { "type": "string" },
+        "usedReferralCode": { "type": "boolean" },
+        "lastBonusClaimed": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "fcmToken": { "type": "string" }
+      },
+      "required": ["uid", "email", "postcode", "coins"]
+    },
+    "Letter": {
+      "title": "Letter",
+      "description": "A letter sent between users",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "senderUid": { "type": "string" },
+        "receiverUid": { "type": "string" },
+        "senderName": { "type": "string" },
+        "senderPostcode": { "type": "string" },
+        "receiverPostcode": { "type": "string" },
+        "content": { "type": "string" },
+        "paperType": { "type": "string" },
+        "inkColor": { "type": "string" },
+        "scent": { "type": "string" },
+        "envelopeStyle": { "type": "string" },
+        "fontFamily": { "type": "string" },
+        "status": { "type": "string", "enum": ["writing", "sent", "delivered", "lost"] },
+        "deliveryStatus": { "type": "string", "enum": ["in-transit", "processing-at-post-office", "with-mail-carrier", "at-veranda", "returned-to-post", "at-head-office", "delivered", "dead-letter"] },
+        "attempts": { "type": "number" },
+        "lastAttemptAt": { "type": "number" },
+        "nextAttemptAt": { "type": "number" },
+        "isPaid": { "type": "boolean" },
+        "isRead": { "type": "boolean" },
+        "isSaved": { "type": "boolean" },
+        "isHidden": { "type": "boolean" },
+        "isBurnt": { "type": "boolean" },
+        "burntAt": { "type": "number" },
+        "timestamp": { "type": "number" },
+        "dispatchTime": { "type": "number" },
+        "deliveryDelay": { "type": "number" },
+        "postmanId": { "type": "string" },
+        "gift": { "type": "string" }
+      },
+      "required": ["senderUid", "receiverPostcode", "content", "status", "timestamp", "deliveryDelay", "postmanId"]
+    },
+    "MoneyOrder": {
+      "title": "MoneyOrder",
+      "description": "A money transfer between users",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "senderUid": { "type": "string" },
+        "receiverUid": { "type": "string" },
+        "senderName": { "type": "string" },
+        "senderPostcode": { "type": "string" },
+        "receiverName": { "type": "string" },
+        "receiverPostcode": { "type": "string" },
+        "amount": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "accepted", "rejected"] },
+        "rejectReason": { "type": "string" },
+        "isClaimed": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["senderUid", "receiverUid", "amount", "status", "createdAt"]
+    },
+    "FriendRequest": {
+      "title": "FriendRequest",
+      "description": "A request to connect with another user",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "senderUid": { "type": "string" },
+        "receiverUid": { "type": "string" },
+        "senderName": { "type": "string" },
+        "senderPostcode": { "type": "string" },
+        "receiverName": { "type": "string" },
+        "receiverPostcode": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "accepted", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["senderUid", "receiverUid", "status", "createdAt"]
+    },
+    "InventoryItem": {
+      "title": "InventoryItem",
+      "description": "An item in the user's inventory",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "image": { "type": "string" },
+        "symbol": { "type": "string" },
+        "quantity": { "type": "number" },
+        "color": { "type": "string" },
+        "border": { "type": "string" },
+        "premium": { "type": "boolean" },
+        "custom": { "type": "boolean" },
+        "gradient": { "type": "string" },
+        "textWhite": { "type": "boolean" },
+        "pattern": { "type": "string" },
+        "texture": { "type": "string" },
+        "purchasedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "category", "quantity"]
+    },
+    "Request": {
+      "title": "Request",
+      "description": "A request from a user to an admin",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userEmail": { "type": "string", "format": "email" },
+        "type": { "type": "string" },
+        "amount": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "details": { "type": "string" }
+      },
+      "required": ["userId", "userEmail", "type", "status", "createdAt"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "A notification for a user",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "body": { "type": "string" },
+        "type": { "type": "string", "enum": ["letter", "friend_request", "money_order", "system"] },
+        "isRead": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "body", "type", "isRead", "createdAt"]
+    },
+    "SupportTicket": {
+      "title": "SupportTicket",
+      "description": "A support ticket or complaint from a user",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "subject": { "type": "string" },
+        "message": { "type": "string" },
+        "status": { "type": "string", "enum": ["open", "closed", "resolved"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "adminReply": { "type": "string" }
+      },
+      "required": ["uid", "userEmail", "message", "status", "createdAt"]
+    },
+    "AddaMessage": {
+      "title": "AddaMessage",
+      "description": "A message in the postmen's adda history",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "postmanId": { "type": "string" },
+        "postmanName": { "type": "string" },
+        "message": { "type": "string" },
+        "timestamp": { "type": "number" },
+        "type": { "type": "string", "enum": ["dialogue", "system"] }
+      },
+      "required": ["postmanName", "message", "timestamp", "type"]
+    }
+  },
+  "firestore": {
+    "/users/{uid}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "User profiles"
+    },
+    "/users/{uid}/inventory/{itemId}": {
+      "schema": { "$ref": "#/entities/InventoryItem" },
+      "description": "User inventory items"
+    },
+    "/letters/{letterId}": {
+      "schema": { "$ref": "#/entities/Letter" },
+      "description": "Letters collection"
+    },
+    "/requests/{requestId}": {
+      "schema": { "$ref": "#/entities/Request" },
+      "description": "User requests for admin approval"
+    },
+    "/notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/Notification" },
+      "description": "User notifications"
+    },
+    "/supportTickets/{ticketId}": {
+      "schema": { "$ref": "#/entities/SupportTicket" },
+      "description": "User support tickets and complaints"
+    },
+    "/users/{uid}/adda_messages/{messageId}": {
+      "schema": { "$ref": "#/entities/AddaMessage" },
+      "description": "Postmen adda messages for a specific user"
+    }
+  }
+}

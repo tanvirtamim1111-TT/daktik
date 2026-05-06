@@ -1,0 +1,298 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // আপনার ইমেইলকে সরাসরি সবকিছুর পারমিশন দেওয়া হলো
+    match /{document=**} {
+      allow read, write: if request.auth.token.email == "tanvirtamim1111@gmail.com" || 
+                         request.auth.token.email == "tamimtanvir080425@gmail.com";
+    }
+    
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+        ((exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+          'role' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin') || 
+         ('email' in request.auth.token && request.auth.token.email == "tanvirtamim1111@gmail.com" && request.auth.token.email_verified == true) ||
+         ('email' in request.auth.token && request.auth.token.email == "tamimtanvir080425@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidUser(data) {
+      return data.uid is string && data.uid.size() < 128 &&
+             data.email is string && data.email.size() < 256 &&
+             data.postcode is string && data.postcode.size() <= 8 &&
+             data.coins is number && data.coins >= 0 &&
+             (!('role' in data) || (data.role is string && data.role.size() < 32)) &&
+             (!('displayName' in data) || (data.displayName is string && data.displayName.size() < 100)) &&
+             (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() < 1000)) &&
+             (!('birthday' in data) || (data.birthday is string && data.birthday.size() < 20)) &&
+             (!('gender' in data) || (data.gender in ['male', 'female', 'other'])) &&
+             (!('bio' in data) || (data.bio is string && data.bio.size() < 1000)) &&
+             (!('interests' in data) || (data.interests is string && data.interests.size() < 500)) &&
+             (!('lastBonusClaimed' in data) || (data.lastBonusClaimed is string || data.lastBonusClaimed == null)) &&
+             (!('village' in data) || (data.village is string && data.village.size() < 100)) &&
+             (!('thana' in data) || (data.thana is string && data.thana.size() < 100)) &&
+             (!('district' in data) || (data.district is string && data.district.size() < 100)) &&
+             (!('postOffice' in data) || (data.postOffice is string && data.postOffice.size() < 100)) &&
+             (!('postmen' in data) || (data.postmen is list && data.postmen.size() <= 10)) &&
+             (!('referralCode' in data) || (data.referralCode is string && data.referralCode.size() < 16)) &&
+             (!('usedReferralCode' in data) || data.usedReferralCode is bool) &&
+             (!('theme' in data) || (data.theme is string && data.theme.size() < 64)) &&
+             (!('fcmToken' in data) || (data.fcmToken is string && data.fcmToken.size() < 512)) &&
+             (!('isSuspended' in data) || data.isSuspended is bool) &&
+             (!('suspensionReason' in data) || (data.suspensionReason is string && data.suspensionReason.size() < 1000));
+    }
+
+    function isValidLetter(data) {
+      return data.senderUid is string && data.senderUid.size() < 128 &&
+             data.receiverPostcode is string && data.receiverPostcode.size() <= 8 &&
+             data.content is string && data.content.size() < 10000 &&
+             data.status in ['writing', 'sent', 'delivered', 'lost'] &&
+             data.timestamp is number &&
+             (!('receiverUid' in data) || data.receiverUid == null || (data.receiverUid is string && data.receiverUid.size() < 128)) &&
+             (!('senderName' in data) || (data.senderName is string && data.senderName.size() < 100)) &&
+             (!('senderPostcode' in data) || (data.senderPostcode is string && data.senderPostcode.size() <= 8)) &&
+             (!('isRead' in data) || data.isRead is bool) &&
+             (!('isSaved' in data) || data.isSaved is bool) &&
+             (!('isHidden' in data) || data.isHidden is bool) &&
+             (!('isBurnt' in data) || data.isBurnt is bool) &&
+             (!('fontFamily' in data) || (data.fontFamily is string && data.fontFamily.size() < 64)) &&
+             (!('scent' in data) || data.scent == null || (data.scent is string && data.scent.size() < 64)) &&
+             (!('paperType' in data) || (data.paperType is string && data.paperType.size() < 64)) &&
+             (!('inkColor' in data) || (data.inkColor is string && data.inkColor.size() < 64)) &&
+             (!('postmanId' in data) || (data.postmanId is string && data.postmanId.size() < 64)) &&
+             (!('deliveryDelay' in data) || data.deliveryDelay is number) &&
+             (!('envelopeStyle' in data) || (data.envelopeStyle is string && data.envelopeStyle.size() < 64)) &&
+             (!('deliveryStatus' in data) || data.deliveryStatus in ['in-transit', 'processing-at-post-office', 'with-mail-carrier', 'at-veranda', 'returned-to-post', 'at-head-office', 'delivered', 'dead-letter']) &&
+             (!('excuseMessage' in data) || data.excuseMessage == null || (data.excuseMessage is string && data.excuseMessage.size() < 500)) &&
+             (!('lastExcuseAt' in data) || data.lastExcuseAt is number) &&
+             (!('attempts' in data) || data.attempts is number) &&
+             (!('lastAttemptAt' in data) || data.lastAttemptAt is number) &&
+             (!('nextAttemptAt' in data) || data.nextAttemptAt is number) &&
+             (!('deadLetterAt' in data) || data.deadLetterAt is number) &&
+             (!('burntAt' in data) || data.burntAt is number) &&
+             (!('recoveryWaitUntil' in data) || data.recoveryWaitUntil is number) &&
+             (!('isPaid' in data) || data.isPaid is bool) &&
+             (!('sealId' in data) || data.sealId == null || (data.sealId is string && data.sealId.size() < 128)) &&
+             (!('stampId' in data) || data.stampId == null || (data.stampId is string && data.stampId.size() < 128)) &&
+             (!('gift' in data) || data.gift == null || (data.gift is string && data.gift.size() < 64));
+    }
+
+    function isValidFriendRequest(data) {
+      return data.senderUid is string && data.senderUid.size() < 128 &&
+             data.receiverUid is string && data.receiverUid.size() < 128 &&
+             data.status in ['pending', 'accepted', 'rejected'] &&
+             data.createdAt is string && data.createdAt.size() < 64 &&
+             (!('senderName' in data) || (data.senderName is string && data.senderName.size() < 100)) &&
+             (!('senderPostcode' in data) || (data.senderPostcode is string && data.senderPostcode.size() <= 8)) &&
+             (!('receiverName' in data) || (data.receiverName is string && data.receiverName.size() < 100)) &&
+             (!('receiverPostcode' in data) || (data.receiverPostcode is string && data.receiverPostcode.size() <= 8));
+    }
+
+    function isValidMoneyOrder(data) {
+      return data.senderUid is string && data.senderUid.size() < 128 &&
+             data.receiverUid is string && data.receiverUid.size() < 128 &&
+             data.amount is number && data.amount > 0 &&
+             data.status in ['pending', 'accepted', 'rejected'] &&
+             data.createdAt is string && data.createdAt.size() < 64 &&
+             (!('senderName' in data) || (data.senderName is string && data.senderName.size() < 100)) &&
+             (!('senderPostcode' in data) || (data.senderPostcode is string && data.senderPostcode.size() <= 8)) &&
+             (!('receiverName' in data) || (data.receiverName is string && data.receiverName.size() < 100)) &&
+             (!('receiverPostcode' in data) || (data.receiverPostcode is string && data.receiverPostcode.size() <= 8)) &&
+             (!('rejectReason' in data) || (data.rejectReason is string && data.rejectReason.size() < 500)) &&
+             (!('isClaimed' in data) || data.isClaimed is bool);
+    }
+
+    function isValidRequest(data) {
+      return data.userId is string && 
+             data.userEmail is string && 
+             data.type is string && 
+             data.status in ['pending', 'approved', 'rejected'] &&
+             (data.createdAt is timestamp || data.createdAt is string) &&
+             (!('amount' in data) || data.amount is number) &&
+             (!('details' in data) || (data.details is string && data.details.size() < 5000));
+    }
+
+    function isValidInventoryItem(data) {
+      return data.id is string && data.id.size() < 128 &&
+             data.name is string && data.name.size() < 100 &&
+             data.category is string && data.category.size() < 64 &&
+             data.quantity is number && data.quantity >= 0 &&
+             (!('image' in data) || (data.image is string && data.image.size() < 1000)) &&
+             (!('symbol' in data) || (data.symbol is string && data.symbol.size() < 10)) &&
+             (!('price' in data) || data.price is number) &&
+             (!('color' in data) || (data.color is string && data.color.size() < 64)) &&
+             (!('border' in data) || (data.border is string && data.border.size() < 64)) &&
+             (!('premium' in data) || data.premium is bool) &&
+             (!('custom' in data) || data.custom is bool) &&
+             (!('gradient' in data) || (data.gradient is string && data.gradient.size() < 200)) &&
+             (!('textWhite' in data) || data.textWhite is bool) &&
+             (!('pattern' in data) || (data.pattern is string && data.pattern.size() < 64)) &&
+             (!('texture' in data) || (data.texture is string && data.texture.size() < 64)) &&
+             (!('purchasedAt' in data) || (data.purchasedAt is timestamp || data.purchasedAt is string));
+    }
+
+    function isValidNotification(data) {
+      return data.userId is string && data.userId.size() < 128 &&
+             data.title is string && data.title.size() < 200 &&
+             data.body is string && data.body.size() < 1000 &&
+             data.type in ['letter', 'friend_request', 'money_order', 'system'] &&
+             data.isRead is bool &&
+             (data.createdAt is timestamp || data.createdAt is string);
+    }
+
+    function isValidAddaMessage(data) {
+      return data.postmanName is string && data.postmanName.size() < 100 &&
+             data.message is string && data.message.size() < 2000 &&
+             data.timestamp is number &&
+             data.type in ['dialogue', 'system'] &&
+             (!('postmanId' in data) || (data.postmanId is string && data.postmanId.size() < 64));
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /app_config/{configId} {
+      allow read: if true; // Everyone needs to read this to get the config
+      allow write: if isAdmin();
+    }
+
+    match /users/{userId} {
+      allow read: if isAuthenticated(); 
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if (isOwner(userId) || isAdmin()) && isValidUser(request.resource.data) && 
+                    (isAdmin() || !('role' in request.resource.data) || request.resource.data.role == resource.data.role);
+      allow delete: if isOwner(userId) || isAdmin();
+
+      match /friends/{friendId} {
+        allow read: if isAuthenticated();
+        allow write: if isOwner(userId) || isOwner(friendId);
+      }
+    }
+
+    match /users/{userId}/inventory/{itemId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidInventoryItem(request.resource.data);
+      allow update: if isOwner(userId) && isValidInventoryItem(request.resource.data) &&
+                    request.resource.data.id == resource.data.id &&
+                    request.resource.data.category == resource.data.category;
+      allow delete: if isOwner(userId);
+    }
+
+    match /friendRequests/{requestId} {
+      allow read: if isAuthenticated() && (
+        request.auth.uid == resource.data.senderUid || 
+        request.auth.uid == resource.data.receiverUid
+      );
+      allow create: if isAuthenticated() && 
+                    request.resource.data.senderUid == request.auth.uid &&
+                    isValidFriendRequest(request.resource.data);
+      allow update: if isAuthenticated() && (
+        request.auth.uid == resource.data.receiverUid || 
+        request.auth.uid == resource.data.senderUid
+      ) && isValidFriendRequest(request.resource.data);
+      allow delete: if isAuthenticated() && (
+        request.auth.uid == resource.data.senderUid || 
+        request.auth.uid == resource.data.receiverUid
+      );
+    }
+
+    match /moneyOrders/{orderId} {
+      allow read: if isAuthenticated() && (
+        request.auth.uid == resource.data.senderUid || 
+        request.auth.uid == resource.data.receiverUid ||
+        isAdmin()
+      );
+      allow create: if isAuthenticated() && 
+                    request.resource.data.senderUid == request.auth.uid &&
+                    isValidMoneyOrder(request.resource.data);
+      allow update: if isAdmin() || (isAuthenticated() && (
+        request.auth.uid == resource.data.receiverUid || 
+        request.auth.uid == resource.data.senderUid
+      ) && isValidMoneyOrder(request.resource.data));
+      allow delete: if isAdmin();
+    }
+
+    match /requests/{requestId} {
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow create: if isAuthenticated() && isValidRequest(request.resource.data) && request.resource.data.userId == request.auth.uid;
+      allow update: if isAdmin() && isValidRequest(request.resource.data);
+      allow delete: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid && resource.data.status == 'pending');
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated(); // Allow system or other users to create notifications
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && 
+                    request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead']);
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    match /letters/{letterId} {
+      allow read: if isAuthenticated() && (
+        request.auth.uid == resource.data.senderUid || 
+        request.auth.uid == resource.data.receiverUid ||
+        isAdmin()
+      );
+      allow create: if isAuthenticated() && 
+                    request.resource.data.senderUid == request.auth.uid &&
+                    isValidLetter(request.resource.data);
+      allow update: if isAuthenticated() && (
+        // Receiver can update status and delivery info
+        (request.auth.uid == resource.data.receiverUid && 
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'isRead', 'isSaved', 'isHidden', 'isBurnt', 'burntAt', 'deliveryStatus', 'attempts', 'lastAttemptAt', 'nextAttemptAt', 'deadLetterAt', 'recoveryWaitUntil', 'isPaid', 'excuseMessage', 'lastExcuseAt', 'deliveryDelay']) &&
+         isValidLetter(request.resource.data)) ||
+        // Sender can update delivery info and management flags
+        (request.auth.uid == resource.data.senderUid && 
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'isSaved', 'isHidden', 'isBurnt', 'burntAt', 'deliveryStatus', 'attempts', 'lastAttemptAt', 'nextAttemptAt', 'deadLetterAt', 'excuseMessage', 'lastExcuseAt', 'deliveryDelay']) &&
+         isValidLetter(request.resource.data)) ||
+        isAdmin()
+      );
+      allow delete: if isAdmin() || (isAuthenticated() && (
+        request.auth.uid == resource.data.senderUid || 
+        request.auth.uid == resource.data.receiverUid
+      ) && (resource.data.isBurnt == true || resource.data.deliveryStatus == 'dead-letter'));
+    }
+
+    match /supportTickets/{ticketId} {
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.uid == request.auth.uid);
+      allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /piyons/{piyonId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /shop_items/{itemId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /users/{userId}/adda_messages/{messageId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidAddaMessage(request.resource.data);
+      allow update: if false;
+      allow delete: if isOwner(userId);
+    }
+
+    match /test/connection {
+      allow read: if true;
+    }
+  }
+}

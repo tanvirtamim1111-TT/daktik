@@ -1,0 +1,5 @@
+{
+  "name": "Daktik",
+  "description": "A vintage-themed letter writing and tracking application inspired by traditional post offices. Featuring live postmen's gossip 'Adda' and realistic delivery tracking.",
+  "requestFramePermissions": ["camera", "notifications"]
+}
