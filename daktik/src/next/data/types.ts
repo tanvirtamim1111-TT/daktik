@@ -35,7 +35,8 @@ export interface Letter {
   deliverAt: number;
   ticketId?: DeliveryTicket["id"];
   read: boolean;
-  reaction?: "heart";
+  /** ♡ — kept in “সংরক্ষিত”. Stored as `isSaved` in Firestore. */
+  saved?: boolean;
   envelopeId?: string;
   stampId?: string;
 }
@@ -59,6 +60,8 @@ export interface Stamp {
   /** Two-colour palette used by the generated stamp artwork. */
   palette: [string, string];
   motif: "river" | "sun" | "leaf" | "boat" | "tiger" | "mosque" | "flower" | "moon" | "rain" | "kite";
+  /** Artwork from the shop/inventory (legacy and admin-uploaded stamps). Replaces the generated motif. */
+  image?: string;
   collected: boolean;
 }
 
@@ -75,6 +78,8 @@ export interface CoinTransaction {
   amount: number; // positive = earned, negative = spent
   reason: string;
   at: number;
+  /** Coin purchase waiting for approval. */
+  pending?: boolean;
 }
 
 export type AddaPostKind = "story" | "memory" | "question" | "photo" | "topic";
@@ -89,6 +94,7 @@ export interface AddaPost {
   likes: number;
   liked: boolean;
   comments: number;
+  mine?: boolean;
 }
 
 export interface AppNotification {
@@ -101,6 +107,7 @@ export interface AppNotification {
 }
 
 export interface Me extends Person {
+  email?: string;
   coins: number;
   joinedAt: number;
 }

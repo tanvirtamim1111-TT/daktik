@@ -7,10 +7,10 @@ The prototype *is* the app: a fully interactive build with in‑memory data.
 ```bash
 cd daktik
 npm install
-npm run dev            # http://localhost:3000/?ui=next
+npm run dev            # http://localhost:3000/?demo=1
 ```
 
-`?ui=next` is remembered on the device; `?ui=legacy` switches back to the old interface. Use Chrome DevTools device mode (Pixel 7, 412 px; or 360 px) for the intended frame.
+`?demo=1` runs the prototype on seed data (remembered; `?demo=0` returns to real accounts). Use Chrome DevTools device mode (Pixel 7, 412 px; or 360 px) for the phone frame, or a normal window ≥ 1024 px for the website layout.
 
 ## Scripted moments to try
 

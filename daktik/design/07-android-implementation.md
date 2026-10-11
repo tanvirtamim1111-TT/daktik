@@ -32,15 +32,15 @@ src/
 
 | Context | How |
 |---|---|
-| Browser / dev | `?ui=next` (persisted), `?ui=legacy` to go back |
-| Android build | `VITE_DAKTIK_UI=next npm run cap:sync` then `npm run cap:open` |
-| Make it the default | change the fallback in `pickUi()` (`src/main.tsx`) once the Firestore adapter lands |
+| Default | The new UI (website and app) |
+| Previous UI | `?ui=legacy` (persisted) or build with `VITE_DAKTIK_UI=legacy` |
+| Demo data | `?demo=1` (persisted), `?demo=0` for real accounts |
 
 The legacy UI and its CSS are code‑split; a device running the new UI never downloads them.
 
-## 3. Data layer: from mock to Firestore
+## 3. Data layer (Firestore) — implemented in `data/firebaseStore.tsx`
 
-Screens depend only on `DaktikStore` (`data/store.tsx`). The next step is a `FirestoreStoreProvider` implementing the same interface on top of the existing collections:
+Screens depend only on `DaktikStore` (`data/store.tsx`). `FirebaseStoreProvider` implements it on the existing collections (see also [08-website.md](08-website.md)):
 
 | UI model | Firestore source | Mapping |
 |---|---|---|
@@ -49,9 +49,9 @@ Screens depend only on `DaktikStore` (`data/store.tsx`). The next step is a `Fir
 | `Letter` | `letters` where `receiverUid == uid` / `senderUid == uid` | `timestamp → sentAt`, `timestamp + deliveryDelay → deliverAt`, `isRead → read`, `isHidden → folder: archived`, `bodyPages/greeting/closing` joined into `body` |
 | `DeliveryTicket` | price → hours (`getDeliveryHours` in legacy: 35→10, 30→15, 20→20, else 24) | identical tiers |
 | `Stamp`, `Envelope` | `shop_items` + `users/{uid}/inventory` | `collected/owned` = present in inventory |
-| `CoinTransaction` | new `users/{uid}/coin_ledger` (append‑only) | written in the same transaction as the coin change |
+| `CoinTransaction` | derived: sent letters (`coinsSpent`), inventory purchases, `requests` of type `coin_purchase` | no extra collection needed |
 | `AppNotification` | `users/{uid}/notifications` | unchanged |
-| `AddaPost` | new `adda_posts` | moderated collection |
+| `AddaPost` | new `adda_posts` | rules added in `firestore.rules` |
 
 Rules:
 * Coin spend + letter create happen in **one Firestore transaction** (as legacy `SendProcess` does).
@@ -85,8 +85,8 @@ Rules:
 
 ## 7. Next steps
 
-1. `FirestoreStoreProvider` behind the same interface; keep `StoreProvider` for tests and the prototype.
-2. Real auth wiring (Firebase Auth: Google, Apple, email link, phone OTP).
-3. Profile editing screen, blocked users, privacy settings (currently “শিগগিরই” toasts).
-4. Adda comments thread + reporting.
-5. Make `next` the default UI, then delete the legacy screens.
+1. ✓ Firestore store and Firebase Auth (Google, Apple, email, phone).
+2. Online coin payments (currently an admin‑approved request).
+3. Blocked users, privacy, security and language settings; Adda comments + reporting.
+4. Server‑side delivery (Cloud Function) so letters can't be read before `deliverAt`, plus FCM push on arrival.
+5. Android: status bar, keyboard, haptics, deep links, bundled fonts — then remove the legacy screens.

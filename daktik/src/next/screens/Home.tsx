@@ -18,7 +18,7 @@ export function HomeScreen() {
   const hasNotif = s.notifications.some((n) => !n.read);
 
   return (
-    <div className="px-4 pb-32">
+    <div className="px-4 pb-32 lg:pb-16">
       {/* Greeting */}
       <header className="dk-safe-top flex items-start justify-between pt-4">
         <div>
@@ -37,83 +37,94 @@ export function HomeScreen() {
       </header>
       <p className="mt-2 text-[0.9375rem] text-dk-ink-2">{unread.length ? "আপনার ডাকবাক্সে নতুন কিছু এসেছে।" : inTransit.length ? "আপনার চিঠি পথে আছে।" : "আজ সব শান্ত।"}</p>
 
-      {/* Hero */}
-      <motion.button
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45, ease: [0.2, 0.8, 0.2, 1] }}
-        onClick={() => (unread[0] ? nav.push({ name: "reader", id: unread[0].id }) : nav.setTab("letters"))}
-        className="relative mt-6 block aspect-[3/2] w-full overflow-hidden rounded-dk-xl text-left text-white"
-        aria-label={unread.length ? `${unread.length}টি নতুন চিঠি, খুলুন` : "ডাকবাক্স দেখুন"}
-      >
-        <HeroArt count={unread.length} />
-        <div className="relative flex h-full flex-col justify-between p-6">
-          <span className="dk-overline !text-white/60">ডাকবাক্স</span>
-          <div>
-            {unread.length > 0 ? (
-              <>
-                <p className="dk-display">
-                  <span className="dk-num">{bn(unread.length)}</span>টি নতুন
-                  <br />
-                  চিঠি
-                </p>
-                <p className="mt-2 text-[0.875rem] text-white/70">{unread.map((l) => l.from.name).join(", ")} লিখেছে</p>
-              </>
+      <div className="lg:mt-4 lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-14">
+        <div>
+          {/* Hero */}
+          <motion.button
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, ease: [0.2, 0.8, 0.2, 1] }}
+            onClick={() => (unread[0] ? nav.push({ name: "reader", id: unread[0].id }) : nav.setTab("letters"))}
+            className="relative mt-6 block aspect-[3/2] w-full overflow-hidden rounded-dk-xl text-left text-white lg:aspect-[16/8]"
+            aria-label={unread.length ? `${unread.length}টি নতুন চিঠি, খুলুন` : "ডাকবাক্স দেখুন"}
+          >
+            <HeroArt count={unread.length} />
+            <div className="relative flex h-full flex-col justify-between p-6">
+              <span className="dk-overline !text-white/60">ডাকবাক্স</span>
+              <div>
+                {unread.length > 0 ? (
+                  <>
+                    <p className="dk-display">
+                      <span className="dk-num">{bn(unread.length)}</span>টি নতুন
+                      <br />
+                      চিঠি
+                    </p>
+                    <p className="mt-2 text-[0.875rem] text-white/70">{unread.map((l) => l.from.name).join(", ")} লিখেছে</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="dk-display text-[2rem]">ডাকবাক্স শান্ত</p>
+                    <p className="mt-2 text-[0.875rem] text-white/70">{inTransit.length ? `${bn(inTransit.length)}টি চিঠি পথে আছে` : "নতুন চিঠি এলে এখানে দেখবেন"}</p>
+                  </>
+                )}
+              </div>
+            </div>
+          </motion.button>
+
+          {/* Recent letters */}
+          <section className="mt-10">
+            <SectionTitle action={<TextLink onClick={() => nav.setTab("letters")}>সব দেখুন</TextLink>}>সাম্প্রতিক চিঠি</SectionTitle>
+            {recent.length ? (
+              <div>
+                {recent.map((l) => (
+                  <LetterRow key={l.id} letter={l} perspective="inbox" now={s.now} onOpen={() => nav.push({ name: "reader", id: l.id })} />
+                ))}
+              </div>
             ) : (
-              <>
-                <p className="dk-display text-[2rem]">ডাকবাক্স শান্ত</p>
-                <p className="mt-2 text-[0.875rem] text-white/70">{inTransit.length ? `${bn(inTransit.length)}টি চিঠি পথে আছে` : "নতুন চিঠি এলে এখানে দেখবেন"}</p>
-              </>
+              <EmptyState
+                art={<EnvelopeGlyph />}
+                title="আপনার ডাকবাক্স এখনো খালি।"
+                action={
+                  <Button size="md" onClick={() => nav.push({ name: "compose" })}>
+                    প্রথম চিঠি লিখুন
+                  </Button>
+                }
+              />
             )}
-          </div>
+          </section>
         </div>
-      </motion.button>
+        <aside className="lg:pt-6">
+          {/* In transit — only when relevant */}
+          {inTransit[0] && (
+            <button onClick={() => nav.push({ name: "delivery", id: inTransit[0].id })} className="mt-6 flex w-full items-center gap-4 rounded-dk-lg bg-dk-gold-tint px-5 py-4 text-left lg:mt-0">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-dk-gold opacity-60 motion-reduce:animate-none" />
+                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-dk-gold" />
+              </span>
+              <span className="flex-1 text-[0.9375rem]">{inTransit[0].to.name}-এর কাছে যাচ্ছে</span>
+              <span className="dk-caption">ট্র্যাক করুন</span>
+            </button>
+          )}
 
-      {/* Recent letters */}
-      <section className="mt-10">
-        <SectionTitle action={<TextLink onClick={() => nav.setTab("letters")}>সব দেখুন</TextLink>}>সাম্প্রতিক চিঠি</SectionTitle>
-        {recent.length ? (
-          <div>
-            {recent.map((l) => (
-              <LetterRow key={l.id} letter={l} perspective="inbox" now={s.now} onOpen={() => nav.push({ name: "reader", id: l.id })} />
-            ))}
-          </div>
-        ) : (
-          <EmptyState art={<EnvelopeGlyph />} title="আপনার ডাকবাক্স এখনো খালি।" action={<Button size="md" onClick={() => nav.push({ name: "compose" })}>প্রথম চিঠি লিখুন</Button>} />
-        )}
-      </section>
-
-      {/* In transit — only when relevant */}
-      {inTransit[0] && (
-        <button onClick={() => nav.push({ name: "delivery", id: inTransit[0].id })} className="mt-6 flex w-full items-center gap-4 rounded-dk-lg bg-dk-gold-tint px-5 py-4 text-left">
-          <span className="relative flex h-2.5 w-2.5">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-dk-gold opacity-60 motion-reduce:animate-none" />
-            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-dk-gold" />
-          </span>
-          <span className="flex-1 text-[0.9375rem]">
-            {inTransit[0].to.name}-এর কাছে যাচ্ছে
-          </span>
-          <span className="dk-caption">ট্র্যাক করুন</span>
-        </button>
-      )}
-
-      {/* Postal identity + activity, deliberately compact */}
-      <section className="mt-10 border-t border-dk-line pt-8">
-        <p className="dk-overline">আপনার ঠিকানা</p>
-        <div className="mt-3 flex items-center justify-between gap-3">
-          <PostalIdChip id={s.me.postalId} size="lg" />
-          <TextLink onClick={() => nav.push({ name: "identity" })}>QR</TextLink>
-        </div>
-        <div className="mt-8">
-          <InlineStats
-            items={[
-              { value: sent.length, label: "পাঠানো" },
-              { value: inbox.length, label: "পাওয়া" },
-              { value: s.stamps.filter((x) => x.collected).length, label: "স্ট্যাম্প" },
-            ]}
-          />
-        </div>
-      </section>
+          {/* Postal identity + activity, deliberately compact */}
+          <section className="mt-10 border-t border-dk-line pt-8 lg:mt-6 lg:rounded-dk-lg lg:border-0 lg:bg-dk-surface lg:p-6">
+            <p className="dk-overline">আপনার ঠিকানা</p>
+            <div className="mt-3 flex items-center justify-between gap-3">
+              <PostalIdChip id={s.me.postalId} size="lg" />
+              <TextLink onClick={() => nav.push({ name: "identity" })}>QR</TextLink>
+            </div>
+            <div className="mt-8">
+              <InlineStats
+                items={[
+                  { value: sent.length, label: "পাঠানো" },
+                  { value: inbox.length, label: "পাওয়া" },
+                  { value: s.stamps.filter((x) => x.collected).length, label: "স্ট্যাম্প" },
+                ]}
+              />
+            </div>
+          </section>
+        </aside>
+      </div>
     </div>
   );
 }

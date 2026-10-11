@@ -2,7 +2,8 @@ import { motion } from "motion/react";
 import { useState } from "react";
 import { Check } from "lucide-react";
 import { CoinBalance, CoinDot, CoinTransactionRow } from "../components/domain";
-import { BottomSheet, Button, SectionTitle, TopBar } from "../components/primitives";
+import { BottomSheet, Button, SectionTitle, TopBar, useToast } from "../components/primitives";
+import { CHEAPEST_TICKET } from "../data/catalog";
 import { useStore } from "../data/store";
 import { bn, cx } from "../lib/format";
 import { useNav } from "../nav";
@@ -17,17 +18,22 @@ const PACKS = [
 export function CoinsScreen() {
   const s = useStore();
   const nav = useNav();
+  const toast = useToast();
   const [buying, setBuying] = useState(false);
   const [pack, setPack] = useState(1);
   const [stage, setStage] = useState<"pick" | "processing" | "done">("pick");
 
-  const lettersLeft = Math.floor(s.me.coins / 10);
+  const lettersLeft = Math.floor(s.me.coins / CHEAPEST_TICKET);
 
   const confirm = async () => {
     setStage("processing");
-    await new Promise((r) => setTimeout(r, 1100));
-    s.addCoins(PACKS[pack].coins, `${PACKS[pack].coins} কয়েন প্যাক`);
-    setStage("done");
+    try {
+      await s.requestCoins(PACKS[pack]);
+      setStage("done");
+    } catch {
+      setStage("pick");
+      toast({ text: "অনুরোধ পাঠানো যায়নি। আবার চেষ্টা করুন।", tone: "error" });
+    }
   };
 
   return (
@@ -67,13 +73,29 @@ export function CoinsScreen() {
       <BottomSheet open={buying} onClose={() => setBuying(false)} title={stage === "done" ? undefined : "কয়েন নিন"}>
         {stage === "done" ? (
           <div className="flex flex-col items-center pb-4 pt-4 text-center">
-            <motion.span initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 300, damping: 16 }} className="flex h-16 w-16 items-center justify-center rounded-full bg-dk-gold-tint">
+            <motion.span
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: "spring", stiffness: 300, damping: 16 }}
+              className="flex h-16 w-16 items-center justify-center rounded-full bg-dk-gold-tint"
+            >
               <CoinDot size={30} />
             </motion.span>
-            <p className="dk-h2 mt-5">
-              <span className="dk-num">{PACKS[pack].coins}</span> কয়েন যোগ হয়েছে
-            </p>
-            <p className="dk-caption mt-1">প্রোটোটাইপ — আসল লেনদেন হয়নি।</p>
+            {s.mode === "live" ? (
+              <>
+                <p className="dk-h2 mt-5">অনুরোধ পাঠানো হয়েছে</p>
+                <p className="dk-caption mt-1 max-w-[280px]">
+                  অনুমোদন হলেই <span className="dk-num">{PACKS[pack].coins}</span> কয়েন আপনার ব্যালেন্সে যোগ হবে।
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="dk-h2 mt-5">
+                  <span className="dk-num">{PACKS[pack].coins}</span> কয়েন যোগ হয়েছে
+                </p>
+                <p className="dk-caption mt-1">ডেমো — আসল লেনদেন হয়নি।</p>
+              </>
+            )}
             <Button block className="mt-6" onClick={() => setBuying(false)}>
               ঠিক আছে
             </Button>
@@ -97,8 +119,9 @@ export function CoinsScreen() {
                 </button>
               ))}
             </div>
+            {s.mode === "live" && <p className="dk-caption mt-4">অনলাইন পেমেন্ট এখনো চালু হয়নি। অনুরোধ পাঠালে Daktik টিম যোগাযোগ করে কয়েন যোগ করে দেবে।</p>}
             <Button block className="mt-6" loading={stage === "processing"} onClick={confirm}>
-              {PACKS[pack].price} দিয়ে নিন
+              {s.mode === "live" ? "অনুরোধ পাঠান" : `${PACKS[pack].price} দিয়ে নিন`}
             </Button>
           </div>
         )}

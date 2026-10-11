@@ -1,18 +1,19 @@
 import { motion } from "motion/react";
-import { useMemo, useState } from "react";
-import { Check, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Check, Loader2, X } from "lucide-react";
 import { StampArt } from "../components/art";
 import { CoinAmount, CoinDot } from "../components/domain";
-import { Avatar, Button, Dialog, IconButton } from "../components/primitives";
-import { DELIVERY_TICKETS, LETTER_LIMIT } from "../data/mock";
+import { Avatar, Button, Dialog, IconButton, useToast } from "../components/primitives";
+import { DELIVERY_TICKETS, LETTER_LIMIT } from "../data/catalog";
 import { useStore } from "../data/store";
-import type { DeliveryTicket } from "../data/types";
+import type { DeliveryTicket, Person } from "../data/types";
 import { bn, cx, formatPostalId, isCompletePostalId } from "../lib/format";
 import { useNav } from "../nav";
 
 export function ComposeScreen({ toPostalId, subject: initialSubject, draftId }: { toPostalId?: string; subject?: string; draftId?: string }) {
   const s = useStore();
   const nav = useNav();
+  const toast = useToast();
   const draft = draftId ? s.letters.find((l) => l.id === draftId) : undefined;
 
   const [to, setTo] = useState(toPostalId ?? (draft && draft.to.postalId !== "—" ? draft.to.postalId : ""));
@@ -22,11 +23,26 @@ export function ComposeScreen({ toPostalId, subject: initialSubject, draftId }: 
   const [stampId, setStampId] = useState<string | undefined>();
   const [sending, setSending] = useState(false);
   const [askDraft, setAskDraft] = useState(false);
-  const [touched, setTouched] = useState(false);
 
-  const recipient = useMemo(() => (isCompletePostalId(to) ? s.lookup(to) : undefined), [to, s]);
+  // Resolve the Postal ID to a person as soon as it is complete.
+  const [lookup, setLookup] = useState<{ id: string; state: "loading" | "done" | "error"; person: Person | null }>({ id: "", state: "done", person: null });
+  useEffect(() => {
+    if (!isCompletePostalId(to)) return;
+    let live = true;
+    setLookup({ id: to, state: "loading", person: null });
+    s.lookup(to)
+      .then((person) => live && setLookup({ id: to, state: "done", person }))
+      .catch(() => live && setLookup({ id: to, state: "error", person: null }));
+    return () => {
+      live = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [to]);
+  const resolved = lookup.id === to && isCompletePostalId(to);
+  const recipient = resolved ? (lookup.person ?? undefined) : undefined;
+  const looking = resolved && lookup.state === "loading";
   const self = recipient?.id === s.me.id;
-  const recipientError = touched && isCompletePostalId(to) && (!recipient ? "এই ঠিকানায় কেউ নেই" : self ? "নিজেকে চিঠি পাঠানো যায় না" : "");
+  const recipientError = resolved && !looking && (lookup.state === "error" ? "খুঁজে দেখা যায়নি — সংযোগ দেখুন" : !recipient ? "এই ঠিকানায় কেউ নেই" : self ? "নিজেকে চিঠি পাঠানো যায় না" : "");
   const owned = s.stamps.filter((x) => x.collected);
   const affordable = s.me.coins >= ticket.coins;
   const ready = !!recipient && !self && body.trim().length > 0 && affordable;
@@ -35,8 +51,7 @@ export function ComposeScreen({ toPostalId, subject: initialSubject, draftId }: 
     if (draft) {
       // Editing a draft saves quietly — no question needed.
       if (body !== draft.body || subject !== (draft.subject ?? "") || to !== draft.to.postalId) {
-        s.remove([draft.id]);
-        s.saveDraft({ to: recipient, subject, body });
+        s.saveDraft({ id: draft.id, to: recipient, subject, body });
       }
       return nav.pop();
     }
@@ -47,10 +62,14 @@ export function ComposeScreen({ toPostalId, subject: initialSubject, draftId }: 
   const send = async () => {
     if (!ready || !recipient) return;
     setSending(true);
-    await new Promise((r) => setTimeout(r, 900)); // the envelope seals
-    if (draft) s.remove([draft.id]);
-    const letter = s.send({ to: recipient, subject, body: body.trim(), ticket, stampId });
-    nav.replace({ name: "delivery", id: letter.id, fresh: true });
+    try {
+      const letter = await s.send({ to: recipient, subject, body: body.trim(), ticket, stampId });
+      if (draft) s.deleteDraft(draft.id);
+      nav.replace({ name: "delivery", id: letter.id, fresh: true });
+    } catch {
+      setSending(false);
+      toast({ text: "চিঠি পাঠানো যায়নি। আবার চেষ্টা করুন।", tone: "error" });
+    }
   };
 
   return (
@@ -76,12 +95,16 @@ export function ComposeScreen({ toPostalId, subject: initialSubject, draftId }: 
               autoComplete="off"
               value={to}
               onChange={(e) => setTo(formatPostalId(e.target.value))}
-              onBlur={() => setTouched(true)}
               placeholder="343-1111"
               aria-invalid={!!recipientError}
               className="dk-num h-10 flex-1 bg-transparent text-[1.125rem] font-semibold tracking-[0.06em] outline-none placeholder:font-normal placeholder:text-dk-ink-3"
             />
           </label>
+          {looking && (
+            <p className="ml-[68px] mt-1 flex items-center gap-2 text-[0.8125rem] text-dk-ink-2">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> খোঁজা হচ্ছে…
+            </p>
+          )}
           {recipient && !self && (
             <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="ml-[68px] mt-1 flex items-center gap-2">
               <Avatar person={recipient} size={24} />
@@ -95,7 +118,12 @@ export function ComposeScreen({ toPostalId, subject: initialSubject, draftId }: 
         {/* Subject */}
         <label className="flex items-center gap-3 border-b border-dk-line py-3">
           <span className="w-14 shrink-0 text-[0.875rem] text-dk-ink-2">বিষয়</span>
-          <input value={subject} onChange={(e) => setSubject(e.target.value.slice(0, 80))} placeholder="ঐচ্ছিক" className="h-10 flex-1 bg-transparent font-display text-[1rem] outline-none placeholder:text-dk-ink-3" />
+          <input
+            value={subject}
+            onChange={(e) => setSubject(e.target.value.slice(0, 80))}
+            placeholder="ঐচ্ছিক"
+            className="h-10 flex-1 bg-transparent font-display text-[1rem] outline-none placeholder:text-dk-ink-3"
+          />
         </label>
 
         {/* Body */}
@@ -190,7 +218,7 @@ export function ComposeScreen({ toPostalId, subject: initialSubject, draftId }: 
         </section>
       </div>
 
-      <div className="dk-safe-bottom fixed inset-x-0 bottom-0 z-30 mx-auto max-w-[480px] bg-gradient-to-t from-dk-bg via-dk-bg to-transparent px-5 pt-6">
+      <div className="dk-safe-bottom fixed inset-x-0 bottom-0 z-30 mx-auto max-w-[var(--dk-col,480px)] bg-gradient-to-t from-dk-bg via-dk-bg to-transparent px-5 pt-6">
         <Button block loading={sending} disabled={!ready} onClick={send}>
           {sending ? "খামে ভরা হচ্ছে…" : "চিঠি পাঠিয়ে দিন"}
         </Button>

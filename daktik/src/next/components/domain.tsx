@@ -63,6 +63,7 @@ export function LetterRow({
   selecting,
   selected,
   onSelect,
+  active,
 }: {
   letter: Letter;
   perspective: "inbox" | "sent" | "drafts";
@@ -73,6 +74,8 @@ export function LetterRow({
   selecting?: boolean;
   selected?: boolean;
   onSelect?: () => void;
+  /** Open in the website's reading pane. */
+  active?: boolean;
 }) {
   const person: Person = perspective === "inbox" ? letter.from : letter.to;
   const unread = perspective === "inbox" && !letter.read;
@@ -94,7 +97,8 @@ export function LetterRow({
   const cancelPress = () => clearTimeout(press.current);
 
   const inTransit = perspective === "sent" && now < letter.deliverAt;
-  const meta = perspective === "inbox" ? timeAgo(letter.deliverAt, now) : perspective === "drafts" ? timeAgo(letter.sentAt, now) : inTransit ? remaining(letter.deliverAt - now) : timeAgo(letter.deliverAt, now);
+  const meta =
+    perspective === "inbox" ? timeAgo(letter.deliverAt, now) : perspective === "drafts" ? timeAgo(letter.sentAt, now) : inTransit ? remaining(letter.deliverAt - now) : timeAgo(letter.deliverAt, now);
 
   return (
     <div className="relative overflow-hidden rounded-dk-md">
@@ -132,15 +136,22 @@ export function LetterRow({
           else onOpen();
         }}
         aria-label={`${person.name}${unread ? ", নতুন" : ""}${letter.subject ? `, ${letter.subject}` : ""}`}
-        className={cx("relative flex w-full items-start gap-4 bg-dk-bg px-1 py-4 text-left transition-colors", selected && "bg-dk-green-tint")}
+        aria-current={active || undefined}
+        className={cx(
+          "relative flex w-full items-start gap-4 bg-dk-bg px-1 py-4 text-left transition-colors lg:rounded-dk-md lg:px-3 lg:hover:bg-dk-sunken",
+          selected && "bg-dk-green-tint",
+          active && "!bg-dk-surface shadow-[var(--dk-shadow-1)]",
+        )}
       >
         <div className="relative">
           {selecting ? (
-            <span className={cx("flex h-11 w-11 items-center justify-center rounded-full border-2 transition-colors", selected ? "border-dk-green bg-dk-green text-dk-on-green" : "border-dk-line-strong")}>
+            <span
+              className={cx("flex h-11 w-11 items-center justify-center rounded-full border-2 transition-colors", selected ? "border-dk-green bg-dk-green text-dk-on-green" : "border-dk-line-strong")}
+            >
               {selected && <Check className="h-5 w-5" />}
             </span>
           ) : (
-            <Avatar person={person} layoutId={`avatar-${letter.id}`} />
+            <Avatar person={person} layoutId={active === undefined ? `avatar-${letter.id}` : undefined} />
           )}
         </div>
         <div className="min-w-0 flex-1">
@@ -223,7 +234,11 @@ export function DeliveryTimeline({ letter, now, animateIn }: { letter: Letter; n
               {done && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
               {active && (
                 <>
-                  <motion.span className="absolute inset-0 rounded-full bg-dk-gold/40" animate={{ scale: [1, 1.7], opacity: [0.6, 0] }} transition={{ duration: 1.8, repeat: Infinity, ease: "easeOut" }} />
+                  <motion.span
+                    className="absolute inset-0 rounded-full bg-dk-gold/40"
+                    animate={{ scale: [1, 1.7], opacity: [0.6, 0] }}
+                    transition={{ duration: 1.8, repeat: Infinity, ease: "easeOut" }}
+                  />
                   <span className="h-2.5 w-2.5 rounded-full bg-dk-gold" />
                 </>
               )}
@@ -257,7 +272,12 @@ const clock = (at: number) => {
 
 export function StampCard({ stamp, onOpen }: { stamp: Stamp; onOpen: () => void }) {
   return (
-    <motion.button whileTap={{ scale: 0.97 }} onClick={onOpen} className="flex flex-col items-stretch text-left" aria-label={`${stamp.name}${stamp.collected ? ", সংগ্রহে আছে" : ", এখনো সংগ্রহ হয়নি"}`}>
+    <motion.button
+      whileTap={{ scale: 0.97 }}
+      onClick={onOpen}
+      className="flex flex-col items-stretch text-left"
+      aria-label={`${stamp.name}${stamp.collected ? ", সংগ্রহে আছে" : ", এখনো সংগ্রহ হয়নি"}`}
+    >
       <motion.div layoutId={`stamp-${stamp.id}`} className="relative rounded-dk-md bg-dk-surface p-4">
         <StampArt stamp={stamp} locked={!stamp.collected} className="mx-auto w-full max-w-[120px] drop-shadow-sm" />
         {stamp.collected && (
@@ -322,7 +342,7 @@ export function CoinTransactionRow({ tx, now }: { tx: CoinTransaction; now: numb
         <p className="truncate text-[0.9375rem]">{tx.reason}</p>
         <p className="dk-caption">{timeAgo(tx.at, now)}</p>
       </div>
-      <span className={cx("dk-num text-[1rem] font-semibold", earned ? "text-dk-success" : "text-dk-ink")}>
+      <span className={cx("dk-num text-[1rem] font-semibold", tx.pending ? "text-dk-ink-3" : earned ? "text-dk-success" : "text-dk-ink")}>
         {earned ? "+" : "−"}
         {Math.abs(tx.amount)}
       </span>

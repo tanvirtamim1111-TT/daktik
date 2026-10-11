@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { StampArt } from "../components/art";
 import { CoinAmount, CoinDot } from "../components/domain";
 import { Button, TopBar, useToast } from "../components/primitives";
-import { DELIVERY_TICKETS } from "../data/mock";
+import { DELIVERY_TICKETS } from "../data/catalog";
 import { useStore } from "../data/store";
 import { bn, cx } from "../lib/format";
 import { useNav, type Route } from "../nav";
@@ -31,7 +31,7 @@ export function PostOfficeScreen() {
   );
 
   return (
-    <div className="pb-32">
+    <div className="pb-32 lg:pb-16">
       <TopBar large title="ডাকঘর" subtitle="সংগ্রহ, খাম, টিকিট আর আড্ডা — এক জায়গায়।" />
       <div className="px-4">
         {/* Balance strip */}
@@ -46,7 +46,7 @@ export function PostOfficeScreen() {
           <span className="rounded-full bg-white/12 px-4 py-2 font-display text-[0.875rem]">বিস্তারিত</span>
         </button>
 
-        <div className="mt-8">
+        <div className="mt-8 lg:grid lg:grid-cols-2 lg:gap-x-12">
           <Row to={{ name: "stamps" }} title="স্ট্যাম্প" detail={`${bn(collected.length)} / ${bn(s.stamps.length)} সংগ্রহ করা হয়েছে`}>
             <div className="flex -space-x-3">
               {preview.map((st, i) => (
@@ -81,7 +81,7 @@ export function EnvelopesScreen() {
   return (
     <div className="pb-16">
       <TopBar large title="খাম" subtitle="প্রতিটা চিঠির জন্য আলাদা একটা মুখ।" onBack={nav.pop} />
-      <div className="grid grid-cols-2 gap-x-3 gap-y-6 px-4 pt-4">
+      <div className="grid grid-cols-2 gap-x-3 gap-y-6 px-4 pt-4 lg:grid-cols-3 lg:gap-x-5">
         {s.envelopes.map((e) => {
           const has = e.owned;
           return (
@@ -106,7 +106,9 @@ export function EnvelopesScreen() {
                     className={cx("rounded-full bg-dk-sunken px-3 py-1 text-[0.8125rem]", s.me.coins < e.coins && "opacity-40")}
                     disabled={s.me.coins < e.coins}
                     aria-label={`${e.name} খাম, ${e.coins} কয়েন`}
-                    onClick={() => s.buyEnvelope(e.id) && toast({ text: `‘${e.name}’ খাম আপনার সংগ্রহে`, tone: "success" })}
+                    onClick={async () => {
+                      if (await s.buyEnvelope(e.id)) toast({ text: `‘${e.name}’ খাম আপনার সংগ্রহে`, tone: "success" });
+                    }}
                   >
                     <CoinAmount value={e.coins} />
                   </button>

@@ -1,15 +1,33 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { createSeed, DELIVERY_TICKETS } from "./mock";
-import type { Envelope, AddaPost, AppNotification, CoinTransaction, DeliveryStage, DeliveryTicket, Letter, LetterFolder, Me, Person, Stamp, ThemePreference } from "./types";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { DELIVERY_TICKETS } from "./catalog";
+import type { AddaPost, AddaPostKind, AppNotification, CoinTransaction, DeliveryStage, DeliveryTicket, Envelope, Letter, LetterFolder, Me, Person, Stamp, ThemePreference } from "./types";
 
 /**
- * In-memory store backing the new UI.
+ * The contract between screens and data.
  *
- * The UI only talks to the `DaktikStore` interface below. Swapping the
- * in-memory implementation for the Firestore one (Phase 07) does not
- * touch any screen.
+ * Two implementations exist:
+ * - `FirebaseStoreProvider` (firebaseStore.tsx) — real accounts and letters.
+ * - `DemoStoreProvider` (mockStore.tsx) — in-memory seed data for design
+ *   review and screenshots (`?demo=1`).
+ * Screens never import either directly.
  */
+
+export type AuthProviderId = "google" | "apple";
+
+export interface AuthApi {
+  withProvider(p: AuthProviderId): Promise<void>;
+  withEmail(input: { mode: "login" | "register"; email: string; password: string; name?: string }): Promise<void>;
+  /** Sends an OTP. `recaptcha` is an empty element the invisible reCAPTCHA can attach to. */
+  sendPhoneCode(phone: string, recaptcha: HTMLElement): Promise<void>;
+  confirmPhoneCode(code: string): Promise<void>;
+  signOut(): Promise<void>;
+}
+
 export interface DaktikStore {
+  mode: "demo" | "live";
+  status: "loading" | "signed-out" | "ready";
+  auth: AuthApi;
+
   now: number;
   me: Me;
   letters: Letter[];
@@ -17,35 +35,42 @@ export interface DaktikStore {
   envelopes: Envelope[];
   transactions: CoinTransaction[];
   adda: AddaPost[];
+  /** "unavailable" when the community feed cannot be read (e.g. rules not deployed). */
+  addaStatus: "loading" | "ok" | "unavailable";
   notifications: AppNotification[];
   theme: ThemePreference;
   /** Letter whose arrival moment should be shown, if any. */
   arrival: Letter | null;
 
-  lookup(postalId: string): Person | undefined;
+  lookup(postalId: string): Promise<Person | null>;
   folder(f: LetterFolder): Letter[];
   markRead(id: string): void;
-  react(id: string): void;
+  toggleSaved(id: string): void;
   archive(ids: string[]): void;
   remove(ids: string[]): void;
   restore(id: string): void;
-  send(input: { to: Person; subject?: string; body: string; ticket: DeliveryTicket; stampId?: string }): Letter;
-  saveDraft(input: { to?: Person; subject?: string; body: string }): void;
-  collectStamp(id: string): boolean;
-  buyEnvelope(id: string): boolean;
-  addCoins(amount: number, reason: string): void;
+  send(input: { to: Person; subject?: string; body: string; ticket: DeliveryTicket; stampId?: string }): Promise<Letter>;
+  saveDraft(input: { id?: string; to?: Person; subject?: string; body: string }): void;
+  deleteDraft(id: string): void;
+  collectStamp(id: string): Promise<boolean>;
+  buyEnvelope(id: string): Promise<boolean>;
+  /** Demo: adds coins. Live: files a purchase request for an admin to approve. */
+  requestCoins(pack: { coins: number; price: string }): Promise<void>;
   likePost(id: string): void;
+  createPost(input: { kind: AddaPostKind; text: string }): Promise<void>;
+  updateProfile(input: { name: string }): Promise<void>;
+  reportProblem(text: string): Promise<void>;
   setTheme(t: ThemePreference): void;
   dismissArrival(): void;
   previewArrival(): void;
   markNotificationsRead(): void;
 }
 
-const Ctx = createContext<DaktikStore | null>(null);
+export const StoreCtx = createContext<DaktikStore | null>(null);
 
 export const useStore = () => {
-  const s = useContext(Ctx);
-  if (!s) throw new Error("useStore must be used inside <StoreProvider>");
+  const s = useContext(StoreCtx);
+  if (!s) throw new Error("useStore must be used inside a store provider");
   return s;
 };
 
@@ -63,47 +88,43 @@ export const deliveryStage = (l: Letter, now: number): DeliveryStage => {
 
 export const isArrived = (l: Letter, now: number) => now >= l.deliverAt;
 
-const THEME_KEY = "daktik.theme";
+export const ticketById = (id?: string) => DELIVERY_TICKETS.find((t) => t.id === id);
 
-const readTheme = (): ThemePreference => {
-  try {
-    const v = localStorage.getItem(THEME_KEY);
-    return v === "light" || v === "dark" ? v : "system";
-  } catch {
-    return "system";
-  }
+export const sortFolder = (letters: Letter[], f: LetterFolder, now: number) =>
+  letters.filter((l) => l.folder === f && (f !== "inbox" || isArrived(l, now))).sort((a, b) => (f === "inbox" || f === "archived" ? b.deliverAt - a.deliverAt : b.sentAt - a.sentAt));
+
+/** Stable hue from any id, so people without photos are still recognisable. */
+export const hueFor = (id: string) => {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) % 360;
+  return h;
 };
 
-export function StoreProvider({ children }: { children: ReactNode }) {
-  const seed = useMemo(() => createSeed(), []);
-  const [now, setNow] = useState(Date.now());
-  const [me, setMe] = useState(seed.me);
-  const [letters, setLetters] = useState(seed.letters);
-  const [stamps, setStamps] = useState(seed.stamps);
-  const [envelopes, setEnvelopes] = useState(seed.envelopes);
-  const [transactions, setTransactions] = useState(seed.transactions);
-  const [adda, setAdda] = useState(seed.adda);
-  const [notifications, setNotifications] = useState(seed.notifications);
-  const [theme, setThemeState] = useState<ThemePreference>(readTheme);
-  const [arrival, setArrival] = useState<Letter | null>(null);
-  const announced = useRef(new Set<string>(seed.letters.filter((l) => isArrived(l, Date.now())).map((l) => l.id)));
+/* ------------------------------------------------------------------ */
+/* Shared hooks                                                        */
+/* ------------------------------------------------------------------ */
 
-  // A slow clock is enough: delivery is measured in hours.
+/** A slow clock is enough: delivery is measured in hours. */
+export function useClock() {
+  const [now, setNow] = useState(Date.now());
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
   }, []);
+  return now;
+}
 
-  // Arrival detection: the first time an inbox letter crosses its deliverAt, celebrate it — once.
-  useEffect(() => {
-    if (arrival) return;
-    const landed = letters.find((l) => l.folder === "inbox" && isArrived(l, now) && !announced.current.has(l.id));
-    if (!landed) return;
-    announced.current.add(landed.id);
-    setArrival(landed);
-    setNotifications((n) => [{ id: `n-${landed.id}`, title: "চিঠি এসেছে", body: `${landed.from.name} আপনাকে লিখেছে।`, at: landed.deliverAt, read: false, letterId: landed.id }, ...n]);
-  }, [now, letters, arrival]);
+const THEME_KEY = "daktik.theme";
 
+export function useThemePreference() {
+  const [theme, setTheme] = useState<ThemePreference>(() => {
+    try {
+      const v = localStorage.getItem(THEME_KEY);
+      return v === "light" || v === "dark" ? v : "system";
+    } catch {
+      return "system";
+    }
+  });
   useEffect(() => {
     const root = document.documentElement;
     if (theme === "system") root.removeAttribute("data-theme");
@@ -111,97 +132,104 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     try {
       localStorage.setItem(THEME_KEY, theme);
     } catch {
-      /* storage unavailable — preference lasts for the session only */
+      /* preference lasts for the session only */
     }
   }, [theme]);
-
-  const patch = useCallback((ids: string[], fn: (l: Letter) => Letter) => {
-    const set = new Set(ids);
-    setLetters((ls) => ls.map((l) => (set.has(l.id) ? fn(l) : l)));
-  }, []);
-
-  const lookup = useCallback(
-    (postalId: string) => Object.values(seed.people).find((p) => p.postalId === postalId) ?? (postalId === me.postalId ? me : undefined),
-    [seed.people, me],
-  );
-
-  const spend = useCallback((amount: number, reason: string) => {
-    setMe((m) => ({ ...m, coins: m.coins - amount }));
-    setTransactions((t) => [{ id: `t-${Date.now()}`, amount: -amount, reason, at: Date.now() }, ...t]);
-  }, []);
-
-  const store: DaktikStore = {
-    now,
-    me,
-    letters,
-    stamps,
-    envelopes,
-    transactions,
-    adda,
-    notifications,
-    theme,
-    arrival,
-    lookup,
-    folder: (f) =>
-      letters
-        .filter((l) => l.folder === f && (f !== "inbox" || isArrived(l, now)))
-        .sort((a, b) => (f === "inbox" ? b.deliverAt - a.deliverAt : b.sentAt - a.sentAt)),
-    markRead: (id) => patch([id], (l) => ({ ...l, read: true })),
-    react: (id) => patch([id], (l) => ({ ...l, reaction: l.reaction ? undefined : "heart" })),
-    archive: (ids) => patch(ids, (l) => ({ ...l, folder: "archived" })),
-    remove: (ids) => setLetters((ls) => ls.filter((l) => !ids.includes(l.id))),
-    restore: (id) => patch([id], (l) => ({ ...l, folder: l.from.id === me.id ? "sent" : "inbox" })),
-    send: ({ to, subject, body, ticket, stampId }) => {
-      const sentAt = Date.now();
-      const letter: Letter = {
-        id: `s-${sentAt}`,
-        folder: "sent",
-        from: me,
-        to,
-        subject: subject || undefined,
-        body,
-        sentAt,
-        deliverAt: sentAt + ticket.hours * 3_600_000,
-        ticketId: ticket.id,
-        read: false,
-        stampId,
-      };
-      setLetters((ls) => [letter, ...ls.filter((l) => !(l.folder === "drafts" && l.to.id === to.id))]);
-      spend(ticket.coins, `${ticket.label} টিকিট · ${to.name}কে চিঠি`);
-      return letter;
-    },
-    saveDraft: ({ to, subject, body }) => {
-      if (!body.trim()) return;
-      const at = Date.now();
-      const recipient: Person = to ?? { id: "unknown", name: "প্রাপক নেই", postalId: "—", hue: 0 };
-      setLetters((ls) => [{ id: `d-${at}`, folder: "drafts", from: me, to: recipient, subject, body, sentAt: at, deliverAt: at, read: true }, ...ls]);
-    },
-    collectStamp: (id) => {
-      const stamp = stamps.find((s) => s.id === id);
-      if (!stamp || stamp.collected || me.coins < stamp.coins) return false;
-      setStamps((ss) => ss.map((s) => (s.id === id ? { ...s, collected: true } : s)));
-      spend(stamp.coins, `স্ট্যাম্প · ${stamp.name}`);
-      return true;
-    },
-    buyEnvelope: (id) => {
-      const env = envelopes.find((e) => e.id === id);
-      if (!env || env.owned || me.coins < env.coins) return false;
-      setEnvelopes((es) => es.map((e) => (e.id === id ? { ...e, owned: true } : e)));
-      spend(env.coins, `খাম · ${env.name}`);
-      return true;
-    },
-    addCoins: (amount, reason) => {
-      setMe((m) => ({ ...m, coins: m.coins + amount }));
-      setTransactions((t) => [{ id: `t-${Date.now()}`, amount, reason, at: Date.now() }, ...t]);
-    },
-    likePost: (id) => setAdda((ps) => ps.map((p) => (p.id === id ? { ...p, liked: !p.liked, likes: p.likes + (p.liked ? -1 : 1) } : p))),
-    setTheme: setThemeState,
-    dismissArrival: () => setArrival(null),
-    previewArrival: () => setArrival(letters.find((l) => l.folder === "inbox") ?? null),
-    markNotificationsRead: () => setNotifications((n) => n.map((x) => ({ ...x, read: true }))),
-  };
-
-  return <Ctx.Provider value={store}>{children}</Ctx.Provider>;
+  return [theme, setTheme] as const;
 }
 
-export const ticketById = (id?: string) => DELIVERY_TICKETS.find((t) => t.id === id);
+/**
+ * Arrival detection. The first time an unread inbox letter crosses its
+ * `deliverAt`, it is announced — once per device.
+ *
+ * `backlog`: on first load, also announce the newest unread letter that
+ * arrived while the app was closed (live mode). Older ones simply wait,
+ * unread, in the inbox.
+ */
+export function useArrival({ letters, now, ready, storageKey, backlog }: { letters: Letter[]; now: number; ready: boolean; storageKey: string; backlog: boolean }) {
+  const [arrival, setArrival] = useState<Letter | null>(null);
+  const announced = useRef<{ key: string; ids: Set<string> } | null>(null);
+
+  useEffect(() => {
+    if (!ready) return;
+    const persist = () => {
+      try {
+        localStorage.setItem(storageKey, JSON.stringify([...announced.current!.ids].slice(-300)));
+      } catch {
+        /* ignore */
+      }
+    };
+    const landed = letters.filter((l) => l.folder === "inbox" && isArrived(l, now));
+    if (announced.current?.key !== storageKey) {
+      let saved: string[] = [];
+      try {
+        saved = JSON.parse(localStorage.getItem(storageKey) ?? "[]");
+      } catch {
+        /* ignore */
+      }
+      const ids = new Set(saved);
+      announced.current = { key: storageKey, ids };
+      const fresh = landed.filter((l) => !l.read && !ids.has(l.id)).sort((a, b) => b.deliverAt - a.deliverAt);
+      landed.forEach((l) => ids.add(l.id));
+      persist();
+      if (backlog && fresh[0]) setArrival(fresh[0]);
+      return;
+    }
+    if (arrival) return;
+    const next = landed.find((l) => !l.read && !announced.current!.ids.has(l.id));
+    if (!next) return;
+    announced.current.ids.add(next.id);
+    persist();
+    setArrival(next);
+  }, [letters, now, ready, arrival, storageKey, backlog]);
+
+  return {
+    arrival,
+    dismiss: useCallback(() => setArrival(null), []),
+    preview: () => setArrival(letters.find((l) => l.folder === "inbox" && isArrived(l, now)) ?? null),
+  };
+}
+
+type StoredDraft = { id: string; to?: Person; subject?: string; body: string; at: number };
+
+const readDrafts = (key: string): StoredDraft[] => {
+  try {
+    return JSON.parse(localStorage.getItem(key) ?? "[]");
+  } catch {
+    return [];
+  }
+};
+
+/** Drafts live on the device — they are private until sent. */
+export function useLocalDrafts(storageKey: string, me: Me) {
+  const [state, setState] = useState(() => ({ key: storageKey, drafts: readDrafts(storageKey) }));
+  const drafts = state.key === storageKey ? state.drafts : readDrafts(storageKey);
+  const write = (next: StoredDraft[]) => {
+    setState({ key: storageKey, drafts: next });
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(next));
+    } catch {
+      /* ignore */
+    }
+  };
+  const asLetters: Letter[] = drafts.map((d) => ({
+    id: d.id,
+    folder: "drafts",
+    from: me,
+    to: d.to ?? { id: "unknown", name: "প্রাপক নেই", postalId: "—", hue: 0 },
+    subject: d.subject,
+    body: d.body,
+    sentAt: d.at,
+    deliverAt: d.at,
+    read: true,
+  }));
+  return {
+    drafts: asLetters,
+    save: ({ id, to, subject, body }: { id?: string; to?: Person; subject?: string; body: string }) => {
+      if (!body.trim()) return;
+      const entry = { id: id ?? `d-${Date.now()}`, to, subject, body, at: Date.now() };
+      write([entry, ...drafts.filter((d) => d.id !== entry.id)]);
+    },
+    remove: (id: string) => write(drafts.filter((d) => d.id !== id)),
+  };
+}

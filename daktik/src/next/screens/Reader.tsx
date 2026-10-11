@@ -1,17 +1,17 @@
 import { motion } from "motion/react";
 import { useEffect, useState } from "react";
-import { Archive, ArrowLeft, Heart, MoreHorizontal, Reply, Trash2 } from "lucide-react";
+import { Archive, ArrowLeft, Heart, MoreHorizontal, Reply, Trash2, X } from "lucide-react";
 import { StampArt } from "../components/art";
 import { Avatar, BottomSheet, Dialog, EmptyState, IconButton, ListItem, useToast } from "../components/primitives";
 import { useStore } from "../data/store";
-import { bn, cx, formatDate } from "../lib/format";
+import { bn, cx, formatDate, remaining } from "../lib/format";
 import { useNav } from "../nav";
 
 /**
  * The emotional centre of Daktik. The letter takes the whole screen on a
  * quiet digital-paper surface; everything else steps back.
  */
-export function ReaderScreen({ id }: { id: string }) {
+export function ReaderScreen({ id, embedded }: { id: string; /** In the website's reading pane. */ embedded?: boolean }) {
   const s = useStore();
   const nav = useNav();
   const toast = useToast();
@@ -20,7 +20,7 @@ export function ReaderScreen({ id }: { id: string }) {
   const [confirm, setConfirm] = useState(false);
 
   useEffect(() => {
-    if (letter && !letter.read && letter.folder === "inbox") s.markRead(letter.id);
+    if (letter && !letter.read && letter.folder === "inbox" && Date.now() >= letter.deliverAt) s.markRead(letter.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [letter?.id]);
 
@@ -36,6 +36,18 @@ export function ReaderScreen({ id }: { id: string }) {
   }
 
   const incoming = letter.from.id !== s.me.id;
+
+  // A letter can't be read before it arrives — not even via a notification link.
+  if (incoming && letter.folder !== "drafts" && s.now < letter.deliverAt) {
+    return (
+      <div className="dk-safe-top px-4">
+        <IconButton label="ফিরে যান" onClick={nav.pop} className="-ml-2">
+          <ArrowLeft className="h-[22px] w-[22px]" />
+        </IconButton>
+        <EmptyState title="চিঠিটা এখনো পথে আছে" body={`${letter.from.name}-এর চিঠি পৌঁছাতে ${remaining(letter.deliverAt - s.now)} বাকি।`} />
+      </div>
+    );
+  }
   const person = incoming ? letter.from : letter.to;
   const stamp = s.stamps.find((x) => x.id === letter.stampId);
   const hours = Math.round((letter.deliverAt - letter.sentAt) / 3_600_000);
@@ -46,9 +58,15 @@ export function ReaderScreen({ id }: { id: string }) {
   return (
     <div className="flex min-h-dvh flex-col bg-dk-bg">
       <header className="dk-safe-top sticky top-0 z-20 flex items-center gap-1 bg-dk-bg/90 px-2 pb-1 backdrop-blur-xl">
-        <IconButton label="ফিরে যান" onClick={nav.pop}>
-          <ArrowLeft className="h-[22px] w-[22px]" />
-        </IconButton>
+        {embedded ? (
+          <IconButton label="বন্ধ করুন" onClick={nav.pop}>
+            <X className="h-[22px] w-[22px]" />
+          </IconButton>
+        ) : (
+          <IconButton label="ফিরে যান" onClick={nav.pop}>
+            <ArrowLeft className="h-[22px] w-[22px]" />
+          </IconButton>
+        )}
         <div className="flex-1" />
         {incoming && (
           <IconButton
@@ -66,7 +84,7 @@ export function ReaderScreen({ id }: { id: string }) {
 
       {/* Sender */}
       <div className="flex items-center gap-4 px-5 pb-6 pt-2">
-        <Avatar person={person} size={52} layoutId={`avatar-${letter.id}`} />
+        <Avatar person={person} size={52} layoutId={embedded ? undefined : `avatar-${letter.id}`} />
         <div className="min-w-0 flex-1">
           <p className="font-display text-[1.125rem] font-semibold">{incoming ? person.name : `${person.name}-কে`}</p>
           <p className="dk-caption">
@@ -81,7 +99,7 @@ export function ReaderScreen({ id }: { id: string }) {
         animate={{ opacity: 1, y: 0, scaleY: 1 }}
         transition={{ duration: 0.55, ease: [0.2, 0.8, 0.2, 1], delay: 0.08 }}
         style={{ transformOrigin: "top center" }}
-        className="dk-paper mx-3 flex-1 rounded-t-dk-xl px-6 pb-40 pt-8 shadow-[var(--dk-shadow-2)]"
+        className="dk-paper mx-3 flex-1 rounded-t-dk-xl px-6 pb-40 pt-8 shadow-[var(--dk-shadow-2)] lg:mx-6 lg:px-12 lg:pt-12"
       >
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -105,17 +123,20 @@ export function ReaderScreen({ id }: { id: string }) {
       </motion.article>
 
       {/* Actions */}
-      <div className="dk-safe-bottom fixed inset-x-0 bottom-0 z-30 mx-auto max-w-[480px] bg-gradient-to-t from-dk-bg via-dk-bg/95 to-transparent px-4 pt-8">
+      <div className="dk-safe-bottom fixed inset-x-0 bottom-0 z-30 mx-auto max-w-[var(--dk-col,480px)] bg-gradient-to-t from-dk-bg via-dk-bg/95 to-transparent px-4 pt-8">
         <div className="flex items-center gap-2">
           <motion.button
             whileTap={{ scale: 0.9 }}
-            onClick={() => s.react(letter.id)}
-            aria-pressed={!!letter.reaction}
-            aria-label="ভালো লেগেছে"
-            className={cx("flex h-14 w-14 items-center justify-center rounded-full transition-colors", letter.reaction ? "bg-dk-error-tint text-dk-error" : "bg-dk-surface text-dk-ink shadow-[var(--dk-shadow-1)]")}
+            onClick={() => s.toggleSaved(letter.id)}
+            aria-pressed={!!letter.saved}
+            aria-label="ভালো লেগেছে — সংরক্ষণ করুন"
+            className={cx(
+              "flex h-14 w-14 items-center justify-center rounded-full transition-colors",
+              letter.saved ? "bg-dk-error-tint text-dk-error" : "bg-dk-surface text-dk-ink shadow-[var(--dk-shadow-1)]",
+            )}
           >
-            <motion.span key={String(!!letter.reaction)} initial={{ scale: letter.reaction ? 0.6 : 1 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 500, damping: 14 }}>
-              <Heart className="h-[22px] w-[22px]" fill={letter.reaction ? "currentColor" : "none"} />
+            <motion.span key={String(!!letter.saved)} initial={{ scale: letter.saved ? 0.6 : 1 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 500, damping: 14 }}>
+              <Heart className="h-[22px] w-[22px]" fill={letter.saved ? "currentColor" : "none"} />
             </motion.span>
           </motion.button>
           {incoming ? (

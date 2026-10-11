@@ -291,6 +291,38 @@ service cloud.firestore {
       allow delete: if isOwner(userId);
     }
 
+    // Postman Adda — community posts (new web app).
+    // Anyone signed in can read; authors write their own posts; others may only
+    // add or remove their own uid in `likedBy`.
+    function isValidAddaPost(data) {
+      return data.authorUid is string && data.authorUid.size() < 128 &&
+             data.authorName is string && data.authorName.size() < 100 &&
+             data.authorPostcode is string && data.authorPostcode.size() <= 8 &&
+             (!('authorPhoto' in data) || (data.authorPhoto is string && data.authorPhoto.size() < 1000)) &&
+             data.kind in ['story', 'memory', 'question', 'photo', 'topic'] &&
+             data.text is string && data.text.size() > 0 && data.text.size() <= 2000 &&
+             data.likedBy is list && data.likedBy.size() <= 10000 &&
+             data.commentCount is number &&
+             data.createdAt is number;
+    }
+
+    match /adda_posts/{postId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() &&
+                    request.resource.data.authorUid == request.auth.uid &&
+                    request.resource.data.likedBy.size() == 0 &&
+                    request.resource.data.commentCount == 0 &&
+                    isValidAddaPost(request.resource.data);
+      allow update: if isAuthenticated() && isValidAddaPost(request.resource.data) && (
+        (resource.data.authorUid == request.auth.uid &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'kind'])) ||
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likedBy']) &&
+         request.resource.data.likedBy.toSet().difference(resource.data.likedBy.toSet()).hasOnly([request.auth.uid]) &&
+         resource.data.likedBy.toSet().difference(request.resource.data.likedBy.toSet()).hasOnly([request.auth.uid]))
+      );
+      allow delete: if isAdmin() || (isAuthenticated() && resource.data.authorUid == request.auth.uid);
+    }
+
     match /test/connection {
       allow read: if true;
     }

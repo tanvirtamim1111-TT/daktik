@@ -13,7 +13,8 @@ A complete redesign of Daktik: the idea belongs to the age of letters; the inter
 | 05 | [High‑fidelity UI (screenshots)](05-high-fidelity.md) |
 | 06 | [Interaction prototype & motion spec](06-interaction-prototype.md) |
 | 07 | [Android implementation structure](07-android-implementation.md) |
+| 08 | [Website first: layouts, Firebase data, setup & deploy](08-website.md) |
 
-**Try it:** `npm install && npm run dev`, then open `http://localhost:3000/?ui=next`.
+**Try it:** `npm install && npm run dev`, then open `http://localhost:3000` (real accounts) or `http://localhost:3000/?demo=1` (demo data).
 
-The new UI lives in [`src/next/`](../src/next). The legacy UI is untouched and remains the default until the Firestore adapter (Phase 07 §3) is in place.
+The new UI lives in [`src/next/`](../src/next) and is the default, running on the real Firebase data. The previous UI is still reachable with `?ui=legacy`.

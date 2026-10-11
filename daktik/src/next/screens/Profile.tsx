@@ -1,7 +1,7 @@
 import { QRCodeSVG } from "qrcode.react";
 import { useState } from "react";
 import { Bell, Bookmark, BookOpen, Ban, CircleHelp, Fingerprint, Globe, Info, Layers, LifeBuoy, LogOut, Mail, Moon, Palette, Settings, Share2, Shield, Stamp, UserRound } from "lucide-react";
-import { EmptyState, ListGroup, ListItem, Switch, TopBar, Button, Dialog, useToast } from "../components/primitives";
+import { BottomSheet, EmptyState, ListGroup, ListItem, Switch, TopBar, Button, Dialog, useToast } from "../components/primitives";
 import { PostalIdChip, ProfileHeader } from "../components/domain";
 import { useStore } from "../data/store";
 import type { ThemePreference } from "../data/types";
@@ -19,7 +19,7 @@ export function ProfileScreen() {
     { value: s.me.coins, label: "কয়েন" },
   ];
   return (
-    <div className="pb-32">
+    <div className="pb-32 lg:pb-16">
       <TopBar
         trailing={
           <button aria-label="সেটিংস" onClick={() => nav.push({ name: "settings" })} className="flex h-11 w-11 items-center justify-center rounded-full active:bg-dk-sunken">
@@ -27,26 +27,28 @@ export function ProfileScreen() {
           </button>
         }
       />
-      <div className="px-4">
-        <ProfileHeader person={s.me}>
-          <p className="dk-caption mt-3">{formatDate(s.me.joinedAt)} থেকে Daktik-এ</p>
-        </ProfileHeader>
+      <div className="px-4 lg:mx-auto lg:grid lg:max-w-[920px] lg:grid-cols-[320px_minmax(0,1fr)] lg:items-start lg:gap-14 lg:pt-6">
+        <div className="lg:rounded-dk-xl lg:bg-dk-surface lg:p-8">
+          <ProfileHeader person={s.me}>
+            <p className="dk-caption mt-3">{formatDate(s.me.joinedAt)} থেকে Daktik-এ</p>
+          </ProfileHeader>
 
-        <dl className="mt-8 grid grid-cols-4 border-y border-dk-line py-5 text-center">
-          {stats.map((st) => (
-            <div key={st.label}>
-              <dd className="dk-num text-[1.25rem] font-semibold">{st.value}</dd>
-              <dt className="dk-caption mt-0.5">{st.label}</dt>
-            </div>
-          ))}
-        </dl>
+          <dl className="mt-8 grid grid-cols-4 border-y border-dk-line py-5 text-center">
+            {stats.map((st) => (
+              <div key={st.label}>
+                <dd className="dk-num text-[1.25rem] font-semibold">{st.value}</dd>
+                <dt className="dk-caption mt-0.5">{st.label}</dt>
+              </div>
+            ))}
+          </dl>
+        </div>
 
-        <div className="mt-8">
+        <div className="mt-8 lg:mt-0">
           <ListGroup>
             <ListItem icon={<Mail className="h-5 w-5" />} label="আমার চিঠি" onClick={() => nav.setTab("letters")} />
             <ListItem icon={<Stamp className="h-5 w-5" />} label="আমার সংগ্রহ" onClick={() => nav.push({ name: "stamps", mine: true })} />
             <ListItem icon={<Fingerprint className="h-5 w-5" />} label="পোস্টাল আইডেন্টিটি" onClick={() => nav.push({ name: "identity" })} />
-            <ListItem icon={<Bookmark className="h-5 w-5" />} label="সংরক্ষিত" detail={bn(s.letters.filter((l) => l.folder === "archived").length)} onClick={() => nav.push({ name: "archive" })} />
+            <ListItem icon={<Bookmark className="h-5 w-5" />} label="সংরক্ষিত" detail={bn(savedLetters(s).length)} onClick={() => nav.push({ name: "archive" })} />
           </ListGroup>
           <ListGroup>
             <ListItem icon={<Settings className="h-5 w-5" />} label="সেটিংস" onClick={() => nav.push({ name: "settings" })} />
@@ -62,6 +64,7 @@ export function IdentityScreen() {
   const s = useStore();
   const nav = useNav();
   const toast = useToast();
+  const [editing, setEditing] = useState(false);
   const share = async () => {
     const text = `Daktik-এ আমাকে চিঠি লিখুন: ${s.me.postalId}`;
     try {
@@ -93,11 +96,83 @@ export function IdentityScreen() {
             শেয়ার
           </Button>
         </div>
-        <button className="mt-6 font-display text-[0.9375rem] text-dk-green" onClick={() => toast({ text: "প্রোফাইল সম্পাদনা শিগগিরই" })}>
+        <button className="mt-6 font-display text-[0.9375rem] text-dk-green" onClick={() => setEditing(true)}>
           প্রোফাইলের তথ্য বদলান
         </button>
       </div>
+      <EditProfileSheet open={editing} onClose={() => setEditing(false)} />
     </div>
+  );
+}
+
+export function EditProfileSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const s = useStore();
+  const toast = useToast();
+  const [name, setName] = useState(s.me.name);
+  const [busy, setBusy] = useState(false);
+  const save = async () => {
+    setBusy(true);
+    try {
+      await s.updateProfile({ name });
+      toast({ text: "প্রোফাইল আপডেট হয়েছে", tone: "success" });
+      onClose();
+    } catch {
+      toast({ text: "সংরক্ষণ করা যায়নি", tone: "error" });
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <BottomSheet open={open} onClose={onClose} title="প্রোফাইল">
+      <label className="block">
+        <span className="dk-caption mb-1.5 block px-1">নাম</span>
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value.slice(0, 60))}
+          className="h-13 w-full rounded-dk-md bg-dk-sunken px-4 text-[1rem] outline-none focus:ring-2 focus:ring-dk-green/30"
+        />
+      </label>
+      <p className="dk-caption mt-3 px-1">
+        পোস্টাল আইডি <span className="dk-num">{s.me.postalId}</span> বদলানো যায় না — এটাই আপনার স্থায়ী ঠিকানা।
+      </p>
+      <Button block className="mb-2 mt-6" loading={busy} disabled={!name.trim() || name.trim() === s.me.name} onClick={save}>
+        সংরক্ষণ করুন
+      </Button>
+    </BottomSheet>
+  );
+}
+
+function ReportSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const s = useStore();
+  const toast = useToast();
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+  const send = async () => {
+    setBusy(true);
+    try {
+      await s.reportProblem(text);
+      setText("");
+      onClose();
+      toast({ text: "ধন্যবাদ — আমরা দেখছি।", tone: "success" });
+    } catch {
+      toast({ text: "পাঠানো যায়নি", tone: "error" });
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <BottomSheet open={open} onClose={onClose} title="সমস্যা জানান">
+      <textarea
+        value={text}
+        onChange={(e) => setText(e.target.value.slice(0, 2000))}
+        rows={5}
+        placeholder="কী হয়েছে, একটু খুলে বলুন…"
+        className="dk-body w-full resize-none rounded-dk-md bg-dk-sunken p-4 outline-none placeholder:text-dk-ink-3 focus:ring-2 focus:ring-dk-green/30"
+      />
+      <Button block className="mb-2 mt-4" loading={busy} disabled={!text.trim()} onClick={send}>
+        পাঠান
+      </Button>
+    </BottomSheet>
   );
 }
 
@@ -109,6 +184,8 @@ export function SettingsScreen() {
   const toast = useToast();
   const [notify, setNotify] = useState(true);
   const [logout, setLogout] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [reporting, setReporting] = useState(false);
   const soon = () => toast({ text: "এই অংশটা শিগগিরই আসছে" });
   const cycleTheme = () => s.setTheme(s.theme === "system" ? "light" : s.theme === "light" ? "dark" : "system");
 
@@ -117,7 +194,7 @@ export function SettingsScreen() {
       <TopBar large title="সেটিংস" onBack={nav.pop} />
       <div className="px-4 pt-4">
         <ListGroup title="অ্যাকাউন্ট">
-          <ListItem icon={<UserRound className="h-5 w-5" />} label="প্রোফাইল" onClick={soon} />
+          <ListItem icon={<UserRound className="h-5 w-5" />} label="প্রোফাইল" detail={s.me.name} onClick={() => setEditing(true)} />
           <ListItem icon={<Fingerprint className="h-5 w-5" />} label="পোস্টাল আইডেন্টিটি" detail={s.me.postalId} onClick={() => nav.push({ name: "identity" })} />
           <ListItem icon={<Shield className="h-5 w-5" />} label="নিরাপত্তা" onClick={soon} />
         </ListGroup>
@@ -132,19 +209,34 @@ export function SettingsScreen() {
         </ListGroup>
         <ListGroup title="সহায়তা">
           <ListItem icon={<CircleHelp className="h-5 w-5" />} label="সাহায্য" onClick={soon} />
-          <ListItem icon={<LifeBuoy className="h-5 w-5" />} label="সমস্যা জানান" onClick={soon} />
-          <ListItem icon={<Info className="h-5 w-5" />} label="Daktik সম্পর্কে" detail="v2.0" onClick={soon} />
+          <ListItem icon={<LifeBuoy className="h-5 w-5" />} label="সমস্যা জানান" onClick={() => setReporting(true)} />
+          <ListItem icon={<Info className="h-5 w-5" />} label="Daktik সম্পর্কে" detail="v2.0" onClick={() => toast({ text: "Daktik — চিঠি পৌঁছায়, অনুভূতি থেকে যায়।" })} />
         </ListGroup>
-        <ListGroup title="ডিজাইন">
-          <ListItem icon={<Palette className="h-5 w-5" />} label="ডিজাইন সিস্টেম" onClick={() => nav.push({ name: "system" })} />
-          <ListItem icon={<Mail className="h-5 w-5" />} label="চিঠি আসার মুহূর্ত দেখুন" onClick={s.previewArrival} />
-          <ListItem icon={<BookOpen className="h-5 w-5" />} label="অনবোর্ডিং আবার দেখুন" onClick={nav.restartOnboarding} />
-        </ListGroup>
+        {s.mode === "demo" && (
+          <ListGroup title="ডিজাইন (ডেমো)">
+            <ListItem icon={<Palette className="h-5 w-5" />} label="ডিজাইন সিস্টেম" onClick={() => nav.push({ name: "system" })} />
+            <ListItem icon={<Mail className="h-5 w-5" />} label="চিঠি আসার মুহূর্ত দেখুন" onClick={s.previewArrival} />
+            <ListItem icon={<BookOpen className="h-5 w-5" />} label="অনবোর্ডিং আবার দেখুন" onClick={nav.restartOnboarding} />
+          </ListGroup>
+        )}
         <ListGroup>
           <ListItem icon={<LogOut className="h-5 w-5" />} label="লগ আউট" danger onClick={() => setLogout(true)} />
         </ListGroup>
       </div>
-      <Dialog open={logout} title="লগ আউট করবেন?" body="আপনার চিঠি আর সংগ্রহ নিরাপদে থাকবে।" confirm="লগ আউট" danger onClose={() => setLogout(false)} onConfirm={() => (setLogout(false), nav.restartOnboarding())} />
+      <Dialog
+        open={logout}
+        title="লগ আউট করবেন?"
+        body="আপনার চিঠি আর সংগ্রহ নিরাপদে থাকবে।"
+        confirm="লগ আউট"
+        danger
+        onClose={() => setLogout(false)}
+        onConfirm={() => {
+          setLogout(false);
+          void s.auth.signOut();
+        }}
+      />
+      <EditProfileSheet open={editing} onClose={() => setEditing(false)} />
+      <ReportSheet open={reporting} onClose={() => setReporting(false)} />
     </div>
   );
 }
@@ -182,21 +274,26 @@ export function NotificationsScreen() {
   );
 }
 
-/** Archived letters (“Saved”). */
+/** “Saved”: letters marked ♡, plus archived ones. */
+export const savedLetters = (s: ReturnType<typeof useStore>) => s.letters.filter((l) => l.folder === "archived" || (l.saved && l.folder !== "drafts")).sort((a, b) => b.deliverAt - a.deliverAt);
+
 export function ArchiveScreen() {
   const s = useStore();
   const nav = useNav();
-  const list = s.folder("archived");
+  const list = savedLetters(s);
   return (
     <div className="pb-16">
-      <TopBar large title="সংরক্ষিত" subtitle="আর্কাইভ করা চিঠি এখানে থাকে।" onBack={nav.pop} />
+      <TopBar large title="সংরক্ষিত" subtitle="♡ দেওয়া আর আর্কাইভ করা চিঠি।" onBack={nav.pop} />
       <div className="px-4">
         {list.length === 0 ? (
-          <EmptyState art={<Layers className="h-10 w-10" />} title="এখানে কিছু নেই" body="চিঠিতে ডানে টানলে সেটা এখানে চলে আসবে।" />
+          <EmptyState art={<Layers className="h-10 w-10" />} title="এখানে কিছু নেই" body="চিঠিতে ♡ দিলে বা ডানে টেনে আর্কাইভ করলে এখানে থাকবে।" />
         ) : (
           list.map((l) => (
             <button key={l.id} onClick={() => nav.push({ name: "reader", id: l.id })} className="flex w-full items-baseline gap-3 border-b border-dk-line py-4 text-left">
-              <span className="flex-1 truncate font-display text-[1rem]">{l.from.name}</span>
+              <span className="flex-1 truncate font-display text-[1rem]">
+                {l.saved && <span className="mr-1.5 text-dk-error">♡</span>}
+                {l.from.id === s.me.id ? `${l.to.name}-কে` : l.from.name}
+              </span>
               <span className="truncate text-[0.875rem] text-dk-ink-2">{l.subject ?? l.body.slice(0, 24)}</span>
             </button>
           ))

@@ -4,7 +4,8 @@
 
 # Daktik
 
-**New UI (2026 redesign):** open the app with `?ui=next`. Design documentation lives in [`design/`](design/README.md), code in [`src/next/`](src/next).
+**Website:** the new Daktik design is the default UI and runs on the real Firebase data. Demo data: `?demo=1`. Previous UI: `?ui=legacy`.
+Setup & deploy: [`design/08-website.md`](design/08-website.md). Design docs: [`design/`](design/README.md). Code: [`src/next/`](src/next).
 
 ## Run and deploy your AI Studio app
 

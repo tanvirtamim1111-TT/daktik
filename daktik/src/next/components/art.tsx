@@ -115,16 +115,22 @@ export function StampArt({ stamp, locked, className }: { stamp: Stamp; locked?: 
       </defs>
       <g mask={`url(#m${id})`}>
         <rect width="100" height="120" fill="#fbfaf6" />
-        <rect x="8" y="8" width="84" height="104" rx="2" fill={bg} />
-        <g transform="translate(12 10)" color={bg}>
-          {MOTIFS[stamp.motif](fg)}
-        </g>
-        <text x="16" y="104" fill={fg} fontFamily="Inter, sans-serif" fontSize="8" fontWeight="600" letterSpacing="1">
-          DAKTIK
-        </text>
-        <text x="84" y="104" fill={fg} fontFamily="Inter, sans-serif" fontSize="9" fontWeight="700" textAnchor="end">
-          {stamp.coins}
-        </text>
+        {stamp.image ? (
+          <image href={stamp.image} x="8" y="8" width="84" height="104" preserveAspectRatio="xMidYMid slice" />
+        ) : (
+          <>
+            <rect x="8" y="8" width="84" height="104" rx="2" fill={bg} />
+            <g transform="translate(12 10)" color={bg}>
+              {MOTIFS[stamp.motif](fg)}
+            </g>
+            <text x="16" y="104" fill={fg} fontFamily="Inter, sans-serif" fontSize="8" fontWeight="600" letterSpacing="1">
+              DAKTIK
+            </text>
+            <text x="84" y="104" fill={fg} fontFamily="Inter, sans-serif" fontSize="9" fontWeight="700" textAnchor="end">
+              {stamp.coins}
+            </text>
+          </>
+        )}
       </g>
     </svg>
   );
@@ -167,7 +173,11 @@ export function EnvelopeGlyph({ size = 96, open }: { size?: number; open?: boole
   return (
     <svg width={size} height={size * 0.72} viewBox="0 0 120 86" aria-hidden>
       <rect x="2" y="12" width="116" height="72" rx="10" fill="var(--dk-surface)" stroke="currentColor" strokeWidth="2" />
-      {open ? <path d="M4 16l56-14 56 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" /> : <path d="M6 18l54 36 54-36" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />}
+      {open ? (
+        <path d="M4 16l56-14 56 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+      ) : (
+        <path d="M6 18l54 36 54-36" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+      )}
       <rect x="92" y="22" width="16" height="20" rx="2" fill="var(--dk-gold)" opacity=".8" />
     </svg>
   );

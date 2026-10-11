@@ -1,16 +1,8 @@
-import type { AddaPost, AppNotification, CoinTransaction, DeliveryTicket, Envelope, Letter, Me, Person, Stamp } from "./types";
+import { ENVELOPE_CATALOG, STAMP_CATALOG } from "./catalog";
+import type { AddaPost, AppNotification, CoinTransaction, Envelope, Letter, Me, Person, Stamp } from "./types";
 
 const H = 3_600_000;
 const M = 60_000;
-
-export const DELIVERY_TICKETS: DeliveryTicket[] = [
-  { id: "standard", label: "সাধারণ", coins: 10, hours: 24 },
-  { id: "swift", label: "দ্রুত", coins: 20, hours: 20 },
-  { id: "express", label: "এক্সপ্রেস", coins: 30, hours: 15 },
-  { id: "priority", label: "প্রায়োরিটি", coins: 35, hours: 10 },
-];
-
-export const LETTER_LIMIT = 1000;
 
 export const createSeed = (now = Date.now()) => {
   const me: Me = { id: "me", name: "Tanvir", postalId: "343-1111", hue: 158, coins: 120, joinedAt: now - 92 * 24 * H };
@@ -31,8 +23,7 @@ export const createSeed = (now = Date.now()) => {
       from: people.mitu,
       to: me,
       subject: "অনেকদিন পর",
-      body:
-        "অনেকদিন পর তোমাকে লিখছি। জানো, আজ সকালে বারান্দায় বসে চা খাচ্ছিলাম আর হঠাৎ মনে হলো — শেষ কবে তোমার সঙ্গে ঠিকমতো কথা হয়েছে?\n\nফোনে কথা হয়, মেসেজ হয়, কিন্তু সেগুলো কেমন যেন তাড়াহুড়োর। তাই ভাবলাম, একটা চিঠি লিখি। ধীরে, সময় নিয়ে।\n\nএখানে এখন বৃষ্টির মৌসুম। জানালার কাচে ফোঁটাগুলো দেখলে ছোটবেলার কথা মনে পড়ে। তুমি কেমন আছো? কাজের চাপ কি একটু কমেছে?\n\nউত্তর দিও। তাড়া নেই — চিঠি তো অপেক্ষারই জিনিস।",
+      body: "অনেকদিন পর তোমাকে লিখছি। জানো, আজ সকালে বারান্দায় বসে চা খাচ্ছিলাম আর হঠাৎ মনে হলো — শেষ কবে তোমার সঙ্গে ঠিকমতো কথা হয়েছে?\n\nফোনে কথা হয়, মেসেজ হয়, কিন্তু সেগুলো কেমন যেন তাড়াহুড়োর। তাই ভাবলাম, একটা চিঠি লিখি। ধীরে, সময় নিয়ে।\n\nএখানে এখন বৃষ্টির মৌসুম। জানালার কাচে ফোঁটাগুলো দেখলে ছোটবেলার কথা মনে পড়ে। তুমি কেমন আছো? কাজের চাপ কি একটু কমেছে?\n\nউত্তর দিও। তাড়া নেই — চিঠি তো অপেক্ষারই জিনিস।",
       sentAt: now - 18 * H,
       deliverAt: now + 6_000, // arrives a few seconds after launch to demo the arrival moment
       ticketId: "express",
@@ -45,8 +36,7 @@ export const createSeed = (now = Date.now()) => {
       from: people.rafi,
       to: me,
       subject: "ঢাকায় ফিরছি",
-      body:
-        "দোস্ত, আগামী মাসে ঢাকায় ফিরছি। এবার আর অজুহাত চলবে না — পুরোনো সেই চায়ের দোকানে বসতেই হবে।\n\nতোর পাঠানো শেষ চিঠিটা এখনো ডেস্কে রাখা আছে। মাঝে মাঝে পড়ি।",
+      body: "দোস্ত, আগামী মাসে ঢাকায় ফিরছি। এবার আর অজুহাত চলবে না — পুরোনো সেই চায়ের দোকানে বসতেই হবে।\n\nতোর পাঠানো শেষ চিঠিটা এখনো ডেস্কে রাখা আছে। মাঝে মাঝে পড়ি।",
       sentAt: now - 26 * H,
       deliverAt: now - 2 * H,
       ticketId: "standard",
@@ -123,27 +113,10 @@ export const createSeed = (now = Date.now()) => {
     },
   ];
 
-  const stamps: Stamp[] = [
-    { id: "s-river", name: "পদ্মা", description: "বিকেলের আলোয় পদ্মার বিস্তার। দেশের নদী সিরিজের প্রথম স্ট্যাম্প।", category: "bangladesh", year: 2026, coins: 15, palette: ["#2f6d8a", "#e9d9a8"], motif: "river", collected: true },
-    { id: "s-boat", name: "পালতোলা নৌকা", description: "নদীমাতৃক দেশের চিরচেনা দৃশ্য, আধুনিক রেখায়।", category: "bangladesh", year: 2026, coins: 20, palette: ["#173f35", "#c8a24a"], motif: "boat", collected: true },
-    { id: "s-tiger", name: "সুন্দরবনের বাঘ", description: "রয়েল বেঙ্গল টাইগার — সাহস আর বনের প্রতীক।", category: "nature", year: 2026, coins: 30, palette: ["#c46a2b", "#1f2a24"], motif: "tiger", collected: false },
-    { id: "s-leaf", name: "চা বাগান", description: "সিলেটের পাহাড়ি ঢালে সবুজ চায়ের সারি।", category: "nature", year: 2025, coins: 15, palette: ["#4d8a68", "#eef2e6"], motif: "leaf", collected: true },
-    { id: "s-flower", name: "শাপলা", description: "জাতীয় ফুল শাপলা, জলের ওপর নিঃশব্দে ফোটে।", category: "nature", year: 2025, coins: 10, palette: ["#d77a8c", "#f7efe9"], motif: "flower", collected: true },
-    { id: "s-mosque", name: "ষাট গম্বুজ", description: "বাগেরহাটের ঐতিহাসিক স্থাপত্য, পনেরো শতকের নিদর্শন।", category: "heritage", year: 2024, coins: 25, palette: ["#8a5a3b", "#f3e7d3"], motif: "mosque", collected: false },
-    { id: "s-sun", name: "নতুন সূর্য", description: "পহেলা বৈশাখের প্রথম ভোর।", category: "special", year: 2026, coins: 35, palette: ["#c8a24a", "#173f35"], motif: "sun", collected: false },
-    { id: "s-rain", name: "বর্ষা", description: "আষাঢ়ের প্রথম বৃষ্টি — অপেক্ষার ঋতু।", category: "nature", year: 2026, coins: 20, palette: ["#5f7f9c", "#e7eef2"], motif: "rain", collected: true },
-    { id: "s-moon", name: "চাঁদরাত", description: "উৎসবের আগের রাতের আকাশ।", category: "special", year: 2025, coins: 30, palette: ["#24324a", "#e9d9a8"], motif: "moon", collected: false },
-    { id: "s-kite", name: "ঘুড়ি", description: "পুরান ঢাকার সাকরাইন উৎসবের রঙিন আকাশ।", category: "heritage", year: 2026, coins: 20, palette: ["#c94b4b", "#f7f5ef"], motif: "kite", collected: true },
-  ];
+  const owned = new Set(["s-river", "s-boat", "s-leaf", "s-flower", "s-rain", "s-kite"]);
+  const stamps: Stamp[] = STAMP_CATALOG.map((x) => ({ ...x, collected: owned.has(x.id) }));
 
-  const envelopes: Envelope[] = [
-    { id: "e-ivory", name: "আইভরি", coins: 0, tone: "#efe9db", owned: true },
-    { id: "e-sage", name: "সেজ", coins: 15, tone: "#aab9a9", owned: true },
-    { id: "e-green", name: "ডাক সবুজ", coins: 25, tone: "#173f35", owned: false },
-    { id: "e-dusk", name: "গোধূলি", coins: 25, tone: "#d8a48f", owned: false },
-    { id: "e-night", name: "রাত", coins: 30, tone: "#24324a", owned: false },
-    { id: "e-gold", name: "সোনালি", coins: 40, tone: "#c8a24a", owned: false },
-  ];
+  const envelopes: Envelope[] = ENVELOPE_CATALOG.map((e) => ({ ...e, owned: e.coins === 0 || e.id === "e-sage" }));
 
   const transactions: CoinTransaction[] = [
     { id: "t1", amount: -10, reason: "সাধারণ টিকিট · শুভকে চিঠি", at: now - 2 * H },

@@ -24,12 +24,20 @@ export function StampsScreen({ mine }: { mine?: boolean }) {
   const collected = s.stamps.filter((x) => x.collected).length;
   const open = s.stamps.find((x) => x.id === openId);
 
-  const collect = () => {
+  const [collecting, setCollecting] = useState(false);
+  const collect = async () => {
     if (!open) return;
-    if (s.collectStamp(open.id)) {
+    if (s.me.coins < open.coins) {
+      toast({ text: "পর্যাপ্ত কয়েন নেই", tone: "error", action: { label: "কয়েন", run: () => nav.push({ name: "coins" }) } });
+      return;
+    }
+    setCollecting(true);
+    const ok = await s.collectStamp(open.id);
+    setCollecting(false);
+    if (ok) {
       setJustCollected(open.id);
       toast({ text: `‘${open.name}’ এখন আপনার সংগ্রহে`, tone: "success" });
-    } else toast({ text: "পর্যাপ্ত কয়েন নেই", tone: "error", action: { label: "কয়েন", run: () => nav.push({ name: "coins" }) } });
+    }
   };
 
   return (
@@ -45,21 +53,29 @@ export function StampsScreen({ mine }: { mine?: boolean }) {
           <p className="dk-caption pb-1">সংগ্রহ করা হয়েছে</p>
         </div>
         <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-dk-sunken" role="progressbar" aria-valuenow={collected} aria-valuemax={s.stamps.length}>
-          <motion.div className="h-full rounded-full bg-dk-green" initial={{ width: 0 }} animate={{ width: `${(collected / s.stamps.length) * 100}%` }} transition={{ duration: 0.7, ease: [0.2, 0.8, 0.2, 1] }} />
-        </div>
-
-        <div className="mt-6">
-          <FilterChips
-            value={filter}
-            onChange={setFilter}
-            items={[{ id: "all", label: "সব" }, ...(Object.keys(CATEGORY_LABEL) as StampCategory[]).map((id) => ({ id, label: CATEGORY_LABEL[id] }))]}
+          <motion.div
+            className="h-full rounded-full bg-dk-green"
+            initial={{ width: 0 }}
+            animate={{ width: `${(collected / s.stamps.length) * 100}%` }}
+            transition={{ duration: 0.7, ease: [0.2, 0.8, 0.2, 1] }}
           />
         </div>
 
+        <div className="mt-6">
+          <FilterChips value={filter} onChange={setFilter} items={[{ id: "all", label: "সব" }, ...(Object.keys(CATEGORY_LABEL) as StampCategory[]).map((id) => ({ id, label: CATEGORY_LABEL[id] }))]} />
+        </div>
+
         {list.length === 0 ? (
-          <EmptyState title="আপনার সংগ্রহ শুরু হয়নি।" action={<Button size="md" onClick={() => nav.replace({ name: "stamps" })}>স্ট্যাম্প দেখুন</Button>} />
+          <EmptyState
+            title="আপনার সংগ্রহ শুরু হয়নি।"
+            action={
+              <Button size="md" onClick={() => nav.replace({ name: "stamps" })}>
+                স্ট্যাম্প দেখুন
+              </Button>
+            }
+          />
         ) : (
-          <div className="mt-6 grid grid-cols-2 gap-x-3 gap-y-6 min-[400px]:grid-cols-3">
+          <div className="mt-6 grid grid-cols-2 gap-x-3 gap-y-6 min-[400px]:grid-cols-3 lg:grid-cols-4 lg:gap-x-5">
             {list.map((st) => (
               <StampCard key={st.id} stamp={st} onOpen={() => setOpenId(st.id)} />
             ))}
@@ -97,7 +113,7 @@ export function StampsScreen({ mine }: { mine?: boolean }) {
             </div>
             <p className="dk-body mt-4 text-dk-ink-2">{open.description}</p>
             {!open.collected && (
-              <Button block className="mt-6" onClick={collect}>
+              <Button block className="mt-6" loading={collecting} onClick={collect}>
                 {bn(open.coins)} কয়েনে সংগ্রহ করুন
               </Button>
             )}

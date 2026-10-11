@@ -103,7 +103,15 @@ export function SystemGallery() {
             ]}
           />
           <div className="mt-4">
-            <FilterChips value={chip} onChange={setChip} items={[{ id: "all", label: "সব" }, { id: "bd", label: "বাংলাদেশ" }, { id: "n", label: "প্রকৃতি" }]} />
+            <FilterChips
+              value={chip}
+              onChange={setChip}
+              items={[
+                { id: "all", label: "সব" },
+                { id: "bd", label: "বাংলাদেশ" },
+                { id: "n", label: "প্রকৃতি" },
+              ]}
+            />
           </div>
           <div className="mt-4">
             <SearchField value={q} onChange={setQ} placeholder="খুঁজুন" />
@@ -120,7 +128,14 @@ export function SystemGallery() {
         </Block>
 
         <Block title="Letter row">
-          <LetterRow letter={sample} perspective="inbox" now={s.now} onOpen={() => nav.push({ name: "reader", id: sample.id })} onArchive={() => toast({ text: "Archive" })} onDelete={() => toast({ text: "Delete" })} />
+          <LetterRow
+            letter={sample}
+            perspective="inbox"
+            now={s.now}
+            onOpen={() => nav.push({ name: "reader", id: sample.id })}
+            onArchive={() => toast({ text: "Archive" })}
+            onDelete={() => toast({ text: "Delete" })}
+          />
           <LetterRow letter={{ ...sample, read: true }} perspective="inbox" now={s.now} onOpen={() => {}} selecting selected />
           {transit && <LetterRow letter={transit} perspective="sent" now={s.now} onOpen={() => nav.push({ name: "delivery", id: transit.id })} />}
         </Block>

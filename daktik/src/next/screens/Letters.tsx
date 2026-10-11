@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "motion/react";
-import { useState } from "react";
-import { Archive, Search, Trash2, X } from "lucide-react";
+import { useState, type CSSProperties } from "react";
+import { Archive, Mail, Search, Trash2, X } from "lucide-react";
 import { EnvelopeGlyph } from "../components/art";
 import { LetterRow } from "../components/domain";
 import { Button, Dialog, EmptyState, IconButton, SearchField, Tabs, useToast } from "../components/primitives";
@@ -8,13 +8,17 @@ import { useStore } from "../data/store";
 import type { Letter } from "../data/types";
 import { bn } from "../lib/format";
 import { useNav } from "../nav";
+import { useWide } from "../lib/useWide";
+import { ReaderScreen } from "./Reader";
 
 type Folder = "inbox" | "sent" | "drafts";
 
-export function LettersScreen() {
+/** Phone: a list. Website (≥1024px): list + reading pane, `openId` is the letter in the pane. */
+export function LettersScreen({ openId }: { openId?: string }) {
   const s = useStore();
   const nav = useNav();
   const toast = useToast();
+  const wide = useWide();
   const [folder, setFolder] = useState<Folder>("inbox");
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
@@ -45,8 +49,8 @@ export function LettersScreen() {
     else nav.push({ name: "reader", id: l.id });
   };
 
-  return (
-    <div className="pb-32">
+  const list = (
+    <div className={wide ? "pb-10" : "pb-32"}>
       <header className="dk-safe-top sticky top-0 z-20 bg-dk-bg/92 px-4 backdrop-blur-xl">
         <AnimatePresence mode="wait" initial={false}>
           {selection ? (
@@ -104,9 +108,26 @@ export function LettersScreen() {
           q ? (
             <EmptyState title="কিছু পাওয়া যায়নি" body={`“${q}” দিয়ে কোনো চিঠি নেই।`} />
           ) : folder === "inbox" ? (
-            <EmptyState art={<EnvelopeGlyph />} title="আপনার ডাকবাক্স এখনো খালি।" body="কাউকে লিখুন — উত্তর আসতে সময় লাগে, সেটাই আনন্দ।" action={<Button size="md" onClick={() => nav.push({ name: "compose" })}>প্রথম চিঠি লিখুন</Button>} />
+            <EmptyState
+              art={<EnvelopeGlyph />}
+              title="আপনার ডাকবাক্স এখনো খালি।"
+              body="কাউকে লিখুন — উত্তর আসতে সময় লাগে, সেটাই আনন্দ।"
+              action={
+                <Button size="md" onClick={() => nav.push({ name: "compose" })}>
+                  প্রথম চিঠি লিখুন
+                </Button>
+              }
+            />
           ) : folder === "sent" ? (
-            <EmptyState art={<EnvelopeGlyph open />} title="এখনো কোনো চিঠি পাঠাননি।" action={<Button size="md" onClick={() => nav.push({ name: "compose" })}>চিঠি লিখুন</Button>} />
+            <EmptyState
+              art={<EnvelopeGlyph open />}
+              title="এখনো কোনো চিঠি পাঠাননি।"
+              action={
+                <Button size="md" onClick={() => nav.push({ name: "compose" })}>
+                  চিঠি লিখুন
+                </Button>
+              }
+            />
           ) : (
             <EmptyState title="কোনো খসড়া নেই" body="অর্ধেক লেখা চিঠি এখানে জমা থাকবে।" />
           )
@@ -124,6 +145,7 @@ export function LettersScreen() {
                     onDelete={() => setConfirmDelete([l.id])}
                     selecting={!!selection}
                     selected={selection?.includes(l.id)}
+                    active={wide ? l.id === openId : undefined}
                     onSelect={() => toggle(l.id)}
                   />
                 </motion.div>
@@ -142,12 +164,32 @@ export function LettersScreen() {
         danger
         onClose={() => setConfirmDelete(null)}
         onConfirm={() => {
-          if (confirmDelete) s.remove(confirmDelete);
+          if (confirmDelete) folder === "drafts" ? confirmDelete.forEach(s.deleteDraft) : s.remove(confirmDelete);
           setConfirmDelete(null);
           setSelection(null);
           toast({ text: "মুছে ফেলা হয়েছে" });
+          if (confirmDelete?.includes(openId ?? "")) nav.pop();
         }}
       />
+    </div>
+  );
+
+  if (!wide) return list;
+
+  return (
+    <div className="flex h-dvh">
+      <div className="dk-scroll h-dvh w-[400px] shrink-0 border-r border-dk-line">{list}</div>
+      <div className="dk-scroll h-dvh flex-1 [transform:translateZ(0)]" style={{ "--dk-col": "760px" } as CSSProperties}>
+        {openId ? (
+          <div className="mx-auto max-w-[760px]">
+            <ReaderScreen key={openId} id={openId} embedded />
+          </div>
+        ) : (
+          <div className="flex h-full items-center justify-center">
+            <EmptyState art={<Mail className="h-10 w-10" />} title="একটা চিঠি বেছে নিন" body="বাঁ দিকের তালিকা থেকে যেকোনো চিঠি খুললে এখানে পড়তে পারবেন।" />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

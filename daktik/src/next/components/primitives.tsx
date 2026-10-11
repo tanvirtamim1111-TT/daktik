@@ -179,7 +179,12 @@ export function SearchField({ value, onChange, placeholder }: { value: string; o
   return (
     <label className="flex h-12 items-center gap-3 rounded-full bg-dk-sunken px-4 text-dk-ink-2 focus-within:ring-2 focus-within:ring-dk-green/30">
       <SearchIcon className="h-[18px] w-[18px]" aria-hidden />
-      <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="h-full flex-1 bg-transparent text-[0.9375rem] text-dk-ink outline-none placeholder:text-dk-ink-3" />
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="h-full flex-1 bg-transparent text-[0.9375rem] text-dk-ink outline-none placeholder:text-dk-ink-3"
+      />
       {value && (
         <button aria-label="মুছুন" onClick={() => onChange("")} className="-mr-1 rounded-full p-1 active:bg-dk-line">
           <X className="h-4 w-4" />
@@ -232,7 +237,13 @@ export function ListItem({ icon, label, detail, onClick, danger, trailing }: { i
 
 export function Switch({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
   return (
-    <button role="switch" aria-checked={checked} aria-label={label} onClick={() => onChange(!checked)} className={cx("relative h-7 w-12 rounded-full transition-colors", checked ? "bg-dk-green" : "bg-dk-line-strong")}>
+    <button
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      onClick={() => onChange(!checked)}
+      className={cx("relative h-7 w-12 rounded-full transition-colors", checked ? "bg-dk-green" : "bg-dk-line-strong")}
+    >
       <motion.span layout transition={{ type: "spring", stiffness: 600, damping: 35 }} className={cx("absolute top-1 h-5 w-5 rounded-full bg-white shadow", checked ? "right-1" : "left-1")} />
     </button>
   );
@@ -295,13 +306,13 @@ export function BottomSheet({ open, onClose, children, title }: { open: boolean;
   return (
     <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center">
+        <div className="fixed inset-0 z-50 flex items-end justify-center lg:items-center lg:p-6">
           <motion.div className="absolute inset-0 bg-[var(--dk-scrim)]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
           <motion.div
             role="dialog"
             aria-modal
             aria-label={title}
-            className="dk-safe-bottom relative w-full max-w-[480px] rounded-t-dk-xl bg-dk-surface px-5 pt-3 shadow-[var(--dk-shadow-2)]"
+            className="dk-safe-bottom dk-scroll relative max-h-[92dvh] w-full max-w-[480px] rounded-t-dk-xl bg-dk-surface px-5 pt-3 shadow-[var(--dk-shadow-2)] lg:max-w-[520px] lg:rounded-dk-xl lg:px-7 lg:pb-6"
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}

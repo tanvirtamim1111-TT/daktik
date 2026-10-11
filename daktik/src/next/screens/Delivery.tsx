@@ -11,7 +11,17 @@ export function DeliveryScreen({ id, fresh }: { id: string; fresh?: boolean }) {
   const s = useStore();
   const nav = useNav();
   const letter = s.letters.find((l) => l.id === id);
-  if (!letter) return <EmptyState title="চিঠিটা খুঁজে পাওয়া যায়নি" action={<Button size="md" onClick={nav.pop}>ফিরে যান</Button>} />;
+  if (!letter)
+    return (
+      <EmptyState
+        title="চিঠিটা খুঁজে পাওয়া যায়নি"
+        action={
+          <Button size="md" onClick={nav.pop}>
+            ফিরে যান
+          </Button>
+        }
+      />
+    );
 
   const stage = deliveryStage(letter, s.now);
   const done = stage === "delivered";
@@ -28,7 +38,12 @@ export function DeliveryScreen({ id, fresh }: { id: string; fresh?: boolean }) {
 
       <div className="flex-1 px-6 pb-36">
         {fresh && (
-          <motion.div initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 260, damping: 18 }} className="mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-dk-green text-dk-on-green">
+          <motion.div
+            initial={{ scale: 0.6, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring", stiffness: 260, damping: 18 }}
+            className="mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-dk-green text-dk-on-green"
+          >
             <Check className="h-7 w-7" strokeWidth={2.5} />
           </motion.div>
         )}
@@ -48,7 +63,12 @@ export function DeliveryScreen({ id, fresh }: { id: string; fresh?: boolean }) {
             <p className="dk-overline">আনুমানিক</p>
             <p className="mt-2 font-display text-[1.5rem] font-semibold">{remaining(letter.deliverAt - s.now)} বাকি</p>
             <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-dk-sunken" role="progressbar" aria-valuenow={Math.round(pct * 100)} aria-valuemin={0} aria-valuemax={100}>
-              <motion.div className="h-full rounded-full bg-dk-gold" initial={fresh ? { width: 0 } : false} animate={{ width: `${Math.max(3, pct * 100)}%` }} transition={{ duration: 0.8, delay: fresh ? 0.6 : 0 }} />
+              <motion.div
+                className="h-full rounded-full bg-dk-gold"
+                initial={fresh ? { width: 0 } : false}
+                animate={{ width: `${Math.max(3, pct * 100)}%` }}
+                transition={{ duration: 0.8, delay: fresh ? 0.6 : 0 }}
+              />
             </div>
             {ticket && (
               <p className="dk-caption mt-3">
@@ -63,8 +83,10 @@ export function DeliveryScreen({ id, fresh }: { id: string; fresh?: boolean }) {
         </div>
       </div>
 
-      <div className="dk-safe-bottom fixed inset-x-0 bottom-0 z-30 mx-auto max-w-[480px] space-y-2 bg-gradient-to-t from-dk-bg via-dk-bg to-transparent px-5 pt-6">
-        <Button block onClick={nav.pop}>{fresh ? "ঠিক আছে" : "ফিরে যান"}</Button>
+      <div className="dk-safe-bottom fixed inset-x-0 bottom-0 z-30 mx-auto max-w-[var(--dk-col,480px)] space-y-2 bg-gradient-to-t from-dk-bg via-dk-bg to-transparent px-5 pt-6">
+        <Button block onClick={nav.pop}>
+          {fresh ? "ঠিক আছে" : "ফিরে যান"}
+        </Button>
         <Button block variant="ghost" size="md" onClick={() => nav.replace({ name: "reader", id: letter.id })}>
           চিঠিটা দেখুন
         </Button>

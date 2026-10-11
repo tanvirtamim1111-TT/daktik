@@ -3,9 +3,9 @@ import { createRoot } from 'react-dom/client';
 
 /**
  * UI selection.
- * - `next`   — the new Daktik design (src/next). Enable with `?ui=next`
- *              (remembered on this device) or build with VITE_DAKTIK_UI=next.
- * - `legacy` — the previous interface. `?ui=legacy` switches back.
+ * - `next`   — the new Daktik design (src/next). Default.
+ * - `legacy` — the previous interface: `?ui=legacy` (remembered on this
+ *              device; `?ui=next` switches back) or build with VITE_DAKTIK_UI=legacy.
  * Each UI is loaded lazily so neither ships the other's code or styles.
  */
 const pickUi = (): 'next' | 'legacy' => {
@@ -17,7 +17,7 @@ const pickUi = (): 'next' | 'legacy' => {
   } catch {
     if (param === 'next' || param === 'legacy') return param;
   }
-  return import.meta.env.VITE_DAKTIK_UI === 'next' ? 'next' : 'legacy';
+  return import.meta.env.VITE_DAKTIK_UI === 'legacy' ? 'legacy' : 'next';
 };
 
 const ui = pickUi();
