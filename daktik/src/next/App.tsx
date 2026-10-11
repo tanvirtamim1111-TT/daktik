@@ -1,10 +1,9 @@
 import { AnimatePresence, LayoutGroup, MotionConfig, motion } from "motion/react";
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import "./theme/daktik.css";
 import { BottomNav } from "./components/BottomNav";
 import { ToastProvider } from "./components/primitives";
 import { Sidebar } from "./components/Sidebar";
-import { FirebaseStoreProvider } from "./data/firebaseStore";
 import { DemoStoreProvider } from "./data/mockStore";
 import { useStore } from "./data/store";
 import { useWide } from "./lib/useWide";
@@ -26,7 +25,12 @@ import { SystemGallery } from "./screens/SystemGallery";
 const ONBOARDED_KEY = "daktik.onboarded";
 
 /** `?demo=1` runs on seed data (remembered); `?demo=0` returns to real accounts. */
+// Loaded only when real accounts are used, so demo/preview builds never start Firebase.
+const FirebaseStoreProvider = lazy(() => import("./data/firebaseStore").then((m) => ({ default: m.FirebaseStoreProvider })));
+
+/** Preview builds (VITE_DAKTIK_PREVIEW=true) always run on demo data. */
 const isDemo = () => {
+  if (import.meta.env.VITE_DAKTIK_PREVIEW === "true") return true;
   const p = new URLSearchParams(window.location.search).get("demo");
   try {
     if (p === "1") localStorage.setItem("daktik.demo", "1");
@@ -43,9 +47,11 @@ export default function NextApp() {
   return (
     <MotionConfig reducedMotion="user">
       <ToastProvider>
-        <Provider>
-          <Shell />
-        </Provider>
+        <Suspense fallback={<Splash />}>
+          <Provider>
+            <Shell />
+          </Provider>
+        </Suspense>
       </ToastProvider>
     </MotionConfig>
   );
