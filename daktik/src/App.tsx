@@ -16888,7 +16888,7 @@ export default function App() {
           />
         );
       case "sodapati":
-        return <Sodapati onBack={handleBack} user={user} onNavigate={setScreen} />;
+        return <Sodapati onBack={handleBack} user={user} onNavigate={(s) => setScreen(s as Screen)} />;
       case "stamps":
         return (
           <DakthikSodoyaloy
@@ -17006,7 +17006,7 @@ export default function App() {
             notification={selectedNotification}
             onBack={() => setScreen("notifications")}
             user={user}
-            onNavigate={setScreen}
+            onNavigate={(s) => setScreen(s as Screen)}
           />
         );
       case "privacy-policy":

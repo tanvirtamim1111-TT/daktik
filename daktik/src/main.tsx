@@ -1,7 +1,29 @@
-import React, { StrictMode, ReactNode } from 'react';
+import React, { StrictMode, ReactNode, lazy, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
-import App from './App.tsx';
-import './index.css';
+
+/**
+ * UI selection.
+ * - `next`   — the new Daktik design (src/next). Enable with `?ui=next`
+ *              (remembered on this device) or build with VITE_DAKTIK_UI=next.
+ * - `legacy` — the previous interface. `?ui=legacy` switches back.
+ * Each UI is loaded lazily so neither ships the other's code or styles.
+ */
+const pickUi = (): 'next' | 'legacy' => {
+  const param = new URLSearchParams(window.location.search).get('ui');
+  try {
+    if (param === 'next' || param === 'legacy') localStorage.setItem('daktik.ui', param);
+    const saved = localStorage.getItem('daktik.ui');
+    if (saved === 'next' || saved === 'legacy') return saved;
+  } catch {
+    if (param === 'next' || param === 'legacy') return param;
+  }
+  return import.meta.env.VITE_DAKTIK_UI === 'next' ? 'next' : 'legacy';
+};
+
+const ui = pickUi();
+const App = ui === 'next'
+  ? lazy(() => import('./next/App.tsx'))
+  : lazy(() => import('./index.css').then(() => import('./App.tsx')));
 
 class ErrorBoundary extends React.Component<{children: ReactNode}, {hasError: boolean, error: any}> {
   state = { hasError: false, error: null };
@@ -40,7 +62,9 @@ class ErrorBoundary extends React.Component<{children: ReactNode}, {hasError: bo
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
-      <App />
+      <Suspense fallback={null}>
+        <App />
+      </Suspense>
     </ErrorBoundary>
   </StrictMode>,
 );
